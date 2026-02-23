@@ -27,6 +27,8 @@ const SettingsSchema = new mongoose.Schema({
   snapchat: { type: String, default: '' },
   snapchatEnabled: { type: Boolean, default: false },
   defaultLanguage: { type: String, enum: ['ar', 'en'], default: 'ar' },
+  invoicePrefix: { type: String, default: 'INV' },
+  invoiceNextNumber: { type: Number, default: 1 },
 }, { timestamps: true });
 
 export default mongoose.models.Settings || mongoose.model('Settings', SettingsSchema);

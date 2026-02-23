@@ -109,8 +109,8 @@ th { border-bottom: 1px solid #000; }
     setTimeout(() => w.print(), 500);
   }, [fontDataUrl]);
 
-  // WhatsApp: download PDF + open WhatsApp with full message
-  const handleWhatsApp = async () => {
+  // WhatsApp: open WhatsApp with invoice message directly (no PDF to avoid stuck screen)
+  const handleWhatsApp = () => {
     if (!invoice) return;
 
     const waMessage = [
@@ -137,31 +137,8 @@ th { border-bottom: 1px solid #000; }
       `Areej Al-Aqhawan Team 🌷`,
     ].join('\n');
 
-    // Generate & download PDF first
-    try {
-      toast.loading('جاري إنشاء الفاتورة PDF...', { id: 'wa-pdf' });
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF } = await import('jspdf');
-      const el = printRef.current;
-      if (el) {
-        const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-        const pdfWidth = 80;
-        const pdfHeight = (canvas.height / canvas.width) * pdfWidth;
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [pdfWidth, Math.max(70, pdfHeight)] });
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save(`invoice-${invoice.invoiceNumber}.pdf`);
-        toast.success('تم تحميل الفاتورة PDF - أرفقها في واتساب', { id: 'wa-pdf', duration: 4000 });
-      }
-    } catch (err) {
-      console.error('PDF generation error:', err);
-      toast.dismiss('wa-pdf');
-    }
-
-    // Open WhatsApp with message
     const phone = invoice.customerPhone?.replace(/[^0-9]/g, '') || '';
-    setTimeout(() => {
-      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(waMessage)}`, '_blank');
-    }, 600);
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(waMessage)}`, '_blank');
   };
 
   // Download PDF only

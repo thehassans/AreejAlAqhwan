@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Invoice from '@/models/Invoice';
 import Customer from '@/models/Customer';
+import Settings from '@/models/Settings';
 
 export async function GET() {
   try {
@@ -26,6 +27,13 @@ export async function POST(req: NextRequest) {
     await dbConnect();
     const body = await req.json();
     const invoice = await Invoice.create(body);
+
+    // Auto-increment invoice number in settings
+    try {
+      await Settings.findOneAndUpdate({}, { $inc: { invoiceNextNumber: 1 } });
+    } catch (e) {
+      console.error('Failed to increment invoice number:', e);
+    }
 
     // Update or create customer for loyalty tracking
     if (body.customerPhone || body.customerName) {

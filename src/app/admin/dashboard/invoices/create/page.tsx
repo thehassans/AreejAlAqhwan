@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiPlus, FiTrash2, FiPrinter } from 'react-icons/fi';
-import { generateInvoiceNumber } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import SarIcon from '@/components/SarIcon';
 
@@ -25,7 +24,7 @@ interface SettingsData {
 
 export default function CreateInvoicePage() {
   const router = useRouter();
-  const [invoiceNumber] = useState(generateInvoiceNumber());
+  const [invoiceNumber, setInvoiceNumber] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -37,7 +36,12 @@ export default function CreateInvoicePage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch('/api/settings').then((r) => r.json()).then(setSettings).catch(console.error);
+    fetch('/api/settings').then((r) => r.json()).then((s) => {
+      setSettings(s);
+      const prefix = s?.invoicePrefix || 'INV';
+      const num = s?.invoiceNextNumber || 1;
+      setInvoiceNumber(`${prefix}-${String(num).padStart(4, '0')}`);
+    }).catch(console.error);
   }, []);
 
   const addItem = () => setItems([...items, { name: '', nameAr: '', quantity: 1, unitPrice: 0, total: 0 }]);

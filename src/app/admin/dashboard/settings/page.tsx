@@ -11,6 +11,7 @@ interface Settings {
   phone: string; email: string; address: string; city: string;
   vatEnabled: boolean; vatPercentage: number; currency: string; defaultLanguage: string;
   logo: string; banner: string;
+  invoicePrefix: string; invoiceNextNumber: number;
   instagram: string; instagramEnabled: boolean; facebook: string; facebookEnabled: boolean;
   twitter: string; twitterEnabled: boolean; pinterest: string; pinterestEnabled: boolean;
   tiktok: string; tiktokEnabled: boolean; snapchat: string; snapchatEnabled: boolean;
@@ -127,6 +128,23 @@ export default function SettingsPage() {
             </select>
           </div>
         </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
+        <h2 className="text-lg font-bold text-gray-800 border-b pb-2">إعدادات الفواتير</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">بادئة الفاتورة (مثال: INV, فاتورة)</label>
+            <input type="text" value={settings.invoicePrefix || 'INV'} onChange={(e) => update('invoicePrefix', e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" dir="ltr" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">رقم الفاتورة التالي</label>
+            <input type="number" min="1" value={settings.invoiceNextNumber || 1} onChange={(e) => update('invoiceNextNumber', parseInt(e.target.value) || 1)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" dir="ltr" />
+          </div>
+        </div>
+        <p className="text-xs text-gray-400">مثال: {settings.invoicePrefix || 'INV'}-{String(settings.invoiceNextNumber || 1).padStart(4, '0')}</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { FiUpload, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
@@ -112,7 +111,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           <div className="flex flex-wrap gap-3">
             {product.images.map((img, i) => (
               <div key={i} className="relative w-24 h-24 rounded-lg overflow-hidden border">
-                <Image src={img} alt="" fill className="object-cover" />
+                <img src={img} alt="" className="w-full h-full object-cover" />
                 <button onClick={() => update('images', product.images.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center" aria-label="Remove"><FiX size={12} /></button>
               </div>
             ))}
