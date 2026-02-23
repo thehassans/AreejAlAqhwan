@@ -1,0 +1,97 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { FiPlus, FiEye, FiPrinter, FiTrash2 } from 'react-icons/fi';
+import { FaWhatsapp } from 'react-icons/fa6';
+import { formatCurrency, formatDateShort } from '@/lib/utils';
+import SarIcon from '@/components/SarIcon';
+import toast from 'react-hot-toast';
+
+interface Invoice {
+  _id: string;
+  invoiceNumber: string;
+  customerName: string;
+  customerPhone: string;
+  total: number;
+  status: string;
+  createdAt: string;
+}
+
+export default function InvoicesPage() {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/invoices').then((r) => r.json()).then((data) => { setInvoices(data); setLoading(false); }).catch(() => setLoading(false));
+  }, []);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذه الفاتورة؟')) return;
+    const res = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      setInvoices(invoices.filter((i) => i._id !== id));
+      toast.success('تم حذف الفاتورة');
+    } else {
+      toast.error('فشل حذف الفاتورة');
+    }
+  };
+
+  const handleWhatsApp = (inv: Invoice) => {
+    const msg = `فاتورة رقم: ${inv.invoiceNumber}\nالعميل: ${inv.customerName}\nالمجموع: ${inv.total} ر.س`;
+    window.open(`https://wa.me/${inv.customerPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-[#5B7B6D] border-t-transparent rounded-full" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-800">الفواتير</h1>
+        <Link href="/admin/dashboard/invoices/create" className="flex items-center gap-2 px-4 py-2 bg-[#5B7B6D] text-white rounded-xl text-sm font-medium hover:bg-[#4a6a5c] transition-colors">
+          <FiPlus size={16} /> إنشاء فاتورة
+        </Link>
+      </div>
+
+      {invoices.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm border p-12 text-center text-gray-400">
+          <p className="text-lg">لا توجد فواتير بعد</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">رقم الفاتورة</th>
+                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">العميل</th>
+                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">المجموع</th>
+                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">التاريخ</th>
+                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {invoices.map((inv) => (
+                  <tr key={inv._id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm font-medium">{inv.invoiceNumber}</td>
+                    <td className="px-4 py-3 text-sm">{inv.customerName}</td>
+                    <td className="px-4 py-3 text-sm font-bold"><span className="flex items-center gap-1">{formatCurrency(inv.total)} <SarIcon size={12} /></span></td>
+                    <td className="px-4 py-3 text-sm text-gray-500">{formatDateShort(inv.createdAt)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Link href={`/admin/dashboard/invoices/${inv._id}`} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title="عرض"><FiEye size={16} /></Link>
+                        <Link href={`/admin/dashboard/invoices/${inv._id}?print=true`} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg" title="طباعة"><FiPrinter size={16} /></Link>
+                        <button onClick={() => handleWhatsApp(inv)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg" title="واتساب"><FaWhatsapp size={16} /></button>
+                        <button onClick={() => handleDelete(inv._id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg" title="حذف"><FiTrash2 size={16} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
