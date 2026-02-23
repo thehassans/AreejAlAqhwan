@@ -8,8 +8,10 @@ export async function GET(req: NextRequest) {
     await dbConnect();
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
+    const orderNumber = searchParams.get('orderNumber');
     const filter: Record<string, unknown> = {};
     if (status && status !== 'all') filter.status = status;
+    if (orderNumber) filter.orderNumber = orderNumber;
     const orders = await Order.find(filter).sort({ createdAt: -1 });
     return NextResponse.json(orders);
   } catch (error) {
