@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { FiHome, FiShoppingBag, FiDownload, FiCheck } from 'react-icons/fi';
@@ -19,6 +19,14 @@ interface OrderData {
 }
 
 export default function ThankYouPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-[#5B7B6D] border-t-transparent rounded-full" /></div>}>
+      <ThankYouContent />
+    </Suspense>
+  );
+}
+
+function ThankYouContent() {
   const { locale } = useLanguageStore();
   const searchParams = useSearchParams();
   const orderNum = searchParams.get('order');
