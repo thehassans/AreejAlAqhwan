@@ -149,6 +149,9 @@ export default function AttendancePage() {
     setScanning(true);
 
     try {
+      // Load jsQR once before starting the loop
+      const jsQR = (await import('jsqr')).default;
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
       });
@@ -158,7 +161,7 @@ export default function AttendancePage() {
         videoRef.current.play();
       }
 
-      const tick = async () => {
+      const tick = () => {
         if (scannedRef.current) return;
         const video = videoRef.current;
         const canvas = canvasRef.current;
@@ -172,14 +175,11 @@ export default function AttendancePage() {
         if (!ctx) { animFrameRef.current = requestAnimationFrame(tick); return; }
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-        const jsQR = (await import('jsqr')).default;
         const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
-
         if (code && code.data) {
           scannedRef.current = true;
           stopCamera();
-          await submitAttendance(code.data);
+          submitAttendance(code.data);
         } else {
           animFrameRef.current = requestAnimationFrame(tick);
         }
@@ -512,7 +512,7 @@ export default function AttendancePage() {
                         <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-lg" />
                         <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-lg" />
                         {scanning && (
-                          <div className="absolute top-0 left-0 right-0 h-0.5 bg-[#5B7B6D] animate-[scanline_2s_ease-in-out_infinite]" />
+                          <div className="absolute top-0 left-0 right-0 h-0.5 bg-[#5B7B6D] animate-scanline" />
                         )}
                       </div>
                     </div>
@@ -530,13 +530,6 @@ export default function AttendancePage() {
         </div>
       )}
 
-      <style jsx>{`
-        @keyframes scanline {
-          0% { top: 0; }
-          50% { top: calc(100% - 2px); }
-          100% { top: 0; }
-        }
-      `}</style>
     </div>
   );
 }
