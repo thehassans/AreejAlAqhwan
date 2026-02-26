@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { FiHome, FiFileText, FiPackage, FiShoppingCart, FiUsers, FiSettings, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
+import { FiHome, FiFileText, FiPackage, FiShoppingCart, FiUsers, FiSettings, FiLogOut, FiMenu, FiX, FiUserCheck, FiCalendar } from 'react-icons/fi';
 
 const navItems = [
   { href: '/admin/dashboard', label: 'الرئيسية', icon: FiHome },
@@ -12,6 +12,8 @@ const navItems = [
   { href: '/admin/dashboard/products', label: 'المنتجات', icon: FiPackage },
   { href: '/admin/dashboard/orders', label: 'الطلبات', icon: FiShoppingCart },
   { href: '/admin/dashboard/customers', label: 'العملاء', icon: FiUsers },
+  { href: '/admin/dashboard/workers', label: 'الموظفون', icon: FiUserCheck },
+  { href: '/admin/dashboard/attendance', label: 'الحضور', icon: FiCalendar },
   { href: '/admin/dashboard/settings', label: 'الإعدادات', icon: FiSettings },
 ];
 
@@ -59,7 +61,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <FiX size={20} />
           </button>
         </div>
-        <nav className="p-4 space-y-1">
+        <nav className="p-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/admin/dashboard' && pathname.startsWith(item.href));
             return (
@@ -71,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             );
           })}
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
           <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors">
             <FiLogOut size={18} />
             تسجيل الخروج

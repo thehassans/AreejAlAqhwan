@@ -13,7 +13,7 @@ export default function SarIcon({ size = 16, className = '' }: { size?: number; 
       }}
       aria-label="ريال سعودي"
     >
-      {'\u00EA'}
+      {'\uF0EA'}
     </span>
   );
 }

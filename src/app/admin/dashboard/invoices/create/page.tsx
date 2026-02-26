@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiPlus, FiTrash2, FiPrinter } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiPrinter, FiSearch } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import SarIcon from '@/components/SarIcon';
 
@@ -13,6 +13,30 @@ interface InvoiceItem {
   unitPrice: number;
   total: number;
 }
+
+interface Customer {
+  _id: string;
+  name: string;
+  phone: string;
+  email: string;
+  totalOrders: number;
+  totalSpent: number;
+  loyaltyTier: string;
+  loyaltyPoints: number;
+}
+
+const tierColors: Record<string, string> = {
+  bronze: 'bg-orange-100 text-orange-700 border-orange-200',
+  silver: 'bg-gray-100 text-gray-600 border-gray-200',
+  gold: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  platinum: 'bg-purple-100 text-purple-700 border-purple-200',
+};
+const tierLabels: Record<string, string> = {
+  bronze: '🥉 برونزي', silver: '🥈 فضي', gold: '🥇 ذهبي', platinum: '💎 بلاتيني',
+};
+const tierEmoji: Record<string, string> = {
+  bronze: '🥉', silver: '🥈', gold: '🥇', platinum: '💎',
+};
 
 interface SettingsData {
   vatEnabled: boolean;
@@ -34,6 +58,11 @@ export default function CreateInvoicePage() {
   const [notes, setNotes] = useState('');
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [saving, setSaving] = useState(false);
+  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
+  const [phoneSuggestions, setPhoneSuggestions] = useState<Customer[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const phoneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch('/api/settings').then((r) => r.json()).then((s) => {
@@ -42,7 +71,26 @@ export default function CreateInvoicePage() {
       const num = s?.invoiceNextNumber || 1;
       setInvoiceNumber(`${prefix}-${String(num).padStart(4, '0')}`);
     }).catch(console.error);
+    fetch('/api/customers').then(r => r.json()).then(data => setAllCustomers(Array.isArray(data) ? data : [])).catch(console.error);
   }, []);
+
+  useEffect(() => {
+    if (customerPhone.trim().length < 2) { setPhoneSuggestions([]); setShowSuggestions(false); return; }
+    const matches = allCustomers.filter(c => c.phone.includes(customerPhone.trim()) || c.name.toLowerCase().includes(customerPhone.toLowerCase())).slice(0, 5);
+    setPhoneSuggestions(matches);
+    setShowSuggestions(matches.length > 0);
+  }, [customerPhone, allCustomers]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => { if (phoneRef.current && !phoneRef.current.contains(e.target as Node)) setShowSuggestions(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const selectCustomer = (c: Customer) => {
+    setCustomerName(c.name); setCustomerPhone(c.phone); setCustomerEmail(c.email || '');
+    setSelectedCustomer(c); setShowSuggestions(false);
+  };
 
   const addItem = () => setItems([...items, { name: '', nameAr: '', quantity: 1, unitPrice: 0, total: 0 }]);
 
@@ -112,16 +160,52 @@ export default function CreateInvoicePage() {
           <h2 className="text-lg font-bold">فاتورة رقم: {invoiceNumber}</h2>
         </div>
 
+        {selectedCustomer && (
+          <div className={`rounded-xl border p-4 ${tierColors[selectedCustomer.loyaltyTier] || 'bg-gray-50 border-gray-200 text-gray-600'}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{tierEmoji[selectedCustomer.loyaltyTier]}</span>
+                <div>
+                  <p className="font-bold text-sm">عميل {tierLabels[selectedCustomer.loyaltyTier]} — {selectedCustomer.name}</p>
+                  <p className="text-xs mt-0.5 opacity-80">{selectedCustomer.totalOrders} طلب سابق · إجمالي الإنفاق: {selectedCustomer.totalSpent.toFixed(2)} ر.س · {selectedCustomer.loyaltyPoints} نقطة ولاء</p>
+                </div>
+              </div>
+              <button onClick={() => { setSelectedCustomer(null); }} className="text-xs underline opacity-60 hover:opacity-100">إلغاء التحديد</button>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">اسم العميل *</label>
             <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
           </div>
-          <div>
+          <div ref={phoneRef} className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">رقم الجوال</label>
-            <input type="text" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" dir="ltr" />
+            <div className="relative">
+              <input type="text" value={customerPhone}
+                onChange={(e) => { setCustomerPhone(e.target.value); setSelectedCustomer(null); }}
+                onFocus={() => phoneSuggestions.length > 0 && setShowSuggestions(true)}
+                className="w-full px-4 py-2 pr-9 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" dir="ltr" placeholder="05xxxxxxxx" />
+              <FiSearch size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            </div>
+            {showSuggestions && (
+              <div className="absolute z-50 top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                <div className="px-3 py-2 bg-gray-50 border-b text-xs text-gray-500 font-medium">عملاء مطابقون</div>
+                {phoneSuggestions.map(c => (
+                  <button key={c._id} onMouseDown={() => selectCustomer(c)} className="w-full text-right px-3 py-3 hover:bg-[#5B7B6D]/5 transition-colors border-b last:border-0">
+                    <div className="flex items-center justify-between">
+                      <div><p className="text-sm font-semibold text-gray-800">{c.name}</p><p className="text-xs text-gray-500" dir="ltr">{c.phone}</p></div>
+                      <div className="text-left">
+                        <span className={`text-xs px-2 py-0.5 rounded-lg font-medium border ${tierColors[c.loyaltyTier]}`}>{tierEmoji[c.loyaltyTier]} {tierLabels[c.loyaltyTier]}</span>
+                        <p className="text-xs text-gray-400 mt-0.5">{c.totalOrders} طلب · {c.loyaltyPoints} نقطة</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">البريد الإلكتروني</label>

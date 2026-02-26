@@ -41,7 +41,7 @@ const fmtDate = (d: string) => {
 
 const fmtNum = (n: number) => n.toFixed(2);
 
-const SAR_CHAR = '\u00EA';
+const SAR_CHAR = '\uF0EA';
 
 export default function InvoiceViewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
