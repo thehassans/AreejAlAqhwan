@@ -6,15 +6,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { FiHome, FiFileText, FiPackage, FiShoppingCart, FiUsers, FiSettings, FiLogOut, FiMenu, FiX, FiUserCheck, FiCalendar } from 'react-icons/fi';
 
-const navItems = [
-  { href: '/admin/dashboard', label: 'الرئيسية', icon: FiHome },
-  { href: '/admin/dashboard/invoices', label: 'الفواتير', icon: FiFileText },
-  { href: '/admin/dashboard/products', label: 'المنتجات', icon: FiPackage },
-  { href: '/admin/dashboard/orders', label: 'الطلبات', icon: FiShoppingCart },
-  { href: '/admin/dashboard/customers', label: 'العملاء', icon: FiUsers },
-  { href: '/admin/dashboard/workers', label: 'الموظفون', icon: FiUserCheck },
-  { href: '/admin/dashboard/attendance', label: 'الحضور', icon: FiCalendar },
-  { href: '/admin/dashboard/settings', label: 'الإعدادات', icon: FiSettings },
+const allNavItems = [
+  { href: '/admin/dashboard', label: 'الرئيسية', icon: FiHome, key: 'dashboard' },
+  { href: '/admin/dashboard/invoices', label: 'الفواتير', icon: FiFileText, key: 'invoices' },
+  { href: '/admin/dashboard/products', label: 'المنتجات', icon: FiPackage, key: 'products' },
+  { href: '/admin/dashboard/orders', label: 'الطلبات', icon: FiShoppingCart, key: 'orders' },
+  { href: '/admin/dashboard/customers', label: 'العملاء', icon: FiUsers, key: 'customers' },
+  { href: '/admin/dashboard/workers', label: 'الموظفون', icon: FiUserCheck, key: 'workers' },
+  { href: '/admin/dashboard/attendance', label: 'الحضور', icon: FiCalendar, key: 'attendance' },
+  { href: '/admin/dashboard/settings', label: 'الإعدادات', icon: FiSettings, key: 'settings' },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -22,13 +22,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [role, setRole] = useState<'admin' | 'worker'>('admin');
+  const [pageAccess, setPageAccess] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch('/api/auth/check').then((r) => {
-      if (!r.ok) router.replace('/admin');
-      else setChecking(false);
+    fetch('/api/auth/check').then(async (r) => {
+      if (!r.ok) { router.replace('/admin'); return; }
+      const data = await r.json();
+      setRole(data.admin?.role || 'admin');
+      setPageAccess(data.admin?.pageAccess || []);
+      setChecking(false);
     }).catch(() => router.replace('/admin'));
   }, [router]);
+
+  const navItems = role === 'admin'
+    ? allNavItems
+    : allNavItems.filter((item) => item.key === 'dashboard' || item.key === 'attendance' || pageAccess.includes(item.key));
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });

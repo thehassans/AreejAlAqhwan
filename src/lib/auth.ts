@@ -7,6 +7,8 @@ export interface AdminPayload {
   id: string;
   email: string;
   name: string;
+  role?: 'admin' | 'worker';
+  pageAccess?: string[];
 }
 
 export function signToken(payload: AdminPayload): string {
