@@ -53,8 +53,6 @@ export default function CreateInvoicePage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [items, setItems] = useState<InvoiceItem[]>([{ name: '', nameAr: '', quantity: 1, unitPrice: 0, total: 0 }]);
-  const [discount, setDiscount] = useState(0);
-  const [discountType, setDiscountType] = useState<'fixed' | 'percentage'>('fixed');
   const [notes, setNotes] = useState('');
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [saving, setSaving] = useState(false);
@@ -113,10 +111,8 @@ export default function CreateInvoicePage() {
   };
 
   const subtotal = items.reduce((sum, i) => sum + i.total, 0);
-  const discountAmount = discountType === 'percentage' ? (subtotal * discount) / 100 : discount;
-  const afterDiscount = subtotal - discountAmount;
-  const vatAmount = settings?.vatEnabled ? (afterDiscount * (settings.vatPercentage || 15)) / 100 : 0;
-  const total = afterDiscount + vatAmount;
+  const vatAmount = settings?.vatEnabled ? (subtotal * (settings.vatPercentage || 15)) / 100 : 0;
+  const total = subtotal + vatAmount;
 
   const handleSave = async (andPrint = false) => {
     if (!customerName.trim()) { toast.error('يرجى إدخال اسم العميل'); return; }
@@ -129,7 +125,7 @@ export default function CreateInvoicePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           invoiceNumber, customerName, customerPhone, customerEmail,
-          items, subtotal, discount, discountType,
+          items, subtotal, discount: 0, discountType: 'fixed',
           vat: settings?.vatPercentage || 0, vatAmount, total, notes,
         }),
       });
@@ -260,19 +256,8 @@ export default function CreateInvoicePage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
           </div>
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-700 min-w-[80px]">الخصم</label>
-              <input type="number" min="0" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-[#5B7B6D] outline-none" />
-              <select value={discountType} onChange={(e) => setDiscountType(e.target.value as 'fixed' | 'percentage')}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                <option value="fixed">ر.س</option>
-                <option value="percentage">%</option>
-              </select>
-            </div>
             <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
               <div className="flex justify-between"><span>المجموع الفرعي</span><span className="flex items-center gap-1">{subtotal.toFixed(2)} <SarIcon size={13} /></span></div>
-              {discountAmount > 0 && <div className="flex justify-between text-red-600"><span>الخصم</span><span className="flex items-center gap-1">-{discountAmount.toFixed(2)} <SarIcon size={13} /></span></div>}
               {settings?.vatEnabled && <div className="flex justify-between"><span>ضريبة ({settings.vatPercentage}%)</span><span className="flex items-center gap-1">{vatAmount.toFixed(2)} <SarIcon size={13} /></span></div>}
               <div className="flex justify-between font-bold text-lg border-t pt-2"><span>الإجمالي</span><span className="flex items-center gap-1">{total.toFixed(2)} <SarIcon size={16} /></span></div>
             </div>
