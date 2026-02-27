@@ -245,10 +245,10 @@ export default function WorkersPage() {
                 <div>
                   <p className="text-xs text-gray-400 mb-1.5 font-medium">صلاحيات الوصول</p>
                   <div className="flex flex-wrap gap-1">
-                    {worker.pageAccess.length === 0 ? (
+                    {(worker.pageAccess || []).length === 0 ? (
                       <span className="text-xs text-gray-300 italic">لا توجد صلاحيات</span>
                     ) : (
-                      worker.pageAccess.map(p => {
+                      (worker.pageAccess || []).map(p => {
                         const page = ALL_PAGES.find(pg => pg.key === p);
                         return (
                           <span key={p} className="text-xs bg-[#5B7B6D]/10 text-[#5B7B6D] px-2 py-0.5 rounded-lg font-medium">

@@ -118,7 +118,10 @@ export default function AttendancePage() {
   }, [stopCamera]);
 
   const submitAttendance = useCallback(async (qrValue: string) => {
-    if (!authUser) return;
+    if (!authUser) {
+      setScanError('تعذر التحقق من هويتك. يرجى تسجيل الخروج وإعادة الدخول.');
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch('/api/attendance', {

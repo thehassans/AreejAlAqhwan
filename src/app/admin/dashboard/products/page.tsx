@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { formatCurrency } from '@/lib/utils';
 import SarIcon from '@/components/SarIcon';
@@ -69,7 +68,7 @@ export default function ProductsPage() {
           {products.map((product) => (
             <div key={product._id} className="bg-white rounded-xl shadow-sm border overflow-hidden">
               <div className="relative h-48 bg-gray-100">
-                <Image src={product.images?.[0] || '/logo.png'} alt={product.nameAr} fill className="object-cover" />
+                <img src={product.images?.[0] || '/logo.png'} alt={product.nameAr} className="w-full h-full object-cover" />
                 {product.featured && <span className="absolute top-2 right-2 px-2 py-0.5 bg-yellow-400 text-yellow-900 text-xs rounded-full font-medium">مميز</span>}
               </div>
               <div className="p-4">
