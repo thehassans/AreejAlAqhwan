@@ -26,14 +26,31 @@ export async function POST(req: NextRequest) {
   try {
     await dbConnect();
     const body = await req.json();
-    const invoice = await Invoice.create(body);
 
-    // Auto-increment invoice number in settings
+    // Generate invoice number server-side (atomic increment, prevents duplicates)
+    let invoiceNumber = body.invoiceNumber as string;
     try {
-      await Settings.findOneAndUpdate({}, { $inc: { invoiceNextNumber: 1 } });
+      let attempts = 0;
+      while (attempts < 20) {
+        const settingsDoc = await Settings.findOneAndUpdate(
+          {},
+          { $inc: { invoiceNextNumber: 1 } },
+          { new: false, upsert: true, setDefaultsOnInsert: true }
+        );
+        const prefix = settingsDoc?.invoicePrefix || 'INV';
+        const num = (settingsDoc?.invoiceNextNumber ?? 1);
+        const candidate = `${prefix}-${String(num).padStart(4, '0')}`;
+        const existing = await Invoice.findOne({ invoiceNumber: candidate });
+        if (!existing) { invoiceNumber = candidate; break; }
+        attempts++;
+      }
     } catch (e) {
-      console.error('Failed to increment invoice number:', e);
+      console.error('Invoice number generation error:', e);
+      // Fall back to timestamp if everything fails
+      if (!invoiceNumber) invoiceNumber = `INV-${Date.now()}`;
     }
+
+    const invoice = await Invoice.create({ ...body, invoiceNumber });
 
     // Update or create customer for loyalty tracking (non-fatal)
     try {
