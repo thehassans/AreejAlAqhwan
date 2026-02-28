@@ -35,33 +35,38 @@ export async function POST(req: NextRequest) {
       console.error('Failed to increment invoice number:', e);
     }
 
-    // Update or create customer for loyalty tracking
-    if (body.customerPhone || body.customerName) {
-      const query = body.customerPhone
-        ? { phone: body.customerPhone }
-        : { name: body.customerName };
+    // Update or create customer for loyalty tracking (non-fatal)
+    try {
+      if (body.customerPhone || body.customerName) {
+        const query = body.customerPhone
+          ? { phone: body.customerPhone }
+          : { name: body.customerName };
 
-      const existing = await Customer.findOne(query);
-      if (existing) {
-        existing.totalOrders += 1;
-        existing.totalSpent += body.total || 0;
-        existing.loyaltyPoints += Math.floor((body.total || 0) / 10);
-        existing.loyaltyTier = calculateLoyaltyTier(existing.totalSpent);
-        if (body.customerName) existing.name = body.customerName;
-        if (body.customerEmail) existing.email = body.customerEmail;
-        await existing.save();
-      } else {
-        const totalSpent = body.total || 0;
-        await Customer.create({
-          name: body.customerName || 'عميل',
-          phone: body.customerPhone || '',
-          email: body.customerEmail || '',
-          totalOrders: 1,
-          totalSpent,
-          loyaltyPoints: Math.floor(totalSpent / 10),
-          loyaltyTier: calculateLoyaltyTier(totalSpent),
-        });
+        const existing = await Customer.findOne(query);
+        if (existing) {
+          existing.totalOrders += 1;
+          existing.totalSpent += body.total || 0;
+          existing.loyaltyPoints += Math.floor((body.total || 0) / 10);
+          existing.loyaltyTier = calculateLoyaltyTier(existing.totalSpent);
+          if (body.customerName) existing.name = body.customerName;
+          if (body.customerEmail) existing.email = body.customerEmail;
+          await existing.save();
+        } else if (body.customerPhone) {
+          // Only create new customer when phone is provided (phone is required in schema)
+          const totalSpent = body.total || 0;
+          await Customer.create({
+            name: body.customerName || 'عميل',
+            phone: body.customerPhone,
+            email: body.customerEmail || '',
+            totalOrders: 1,
+            totalSpent,
+            loyaltyPoints: Math.floor(totalSpent / 10),
+            loyaltyTier: calculateLoyaltyTier(totalSpent),
+          });
+        }
       }
+    } catch (e) {
+      console.error('Customer update failed (non-fatal):', e);
     }
 
     return NextResponse.json(invoice, { status: 201 });

@@ -137,8 +137,13 @@ th { border-bottom: 1px solid #000; }
       `Areej Al-Aqhawan Team 🌷`,
     ].join('\n');
 
-    const phone = invoice.customerPhone?.replace(/[^0-9]/g, '') || '';
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(waMessage)}`, '_blank');
+    let phone = invoice.customerPhone?.replace(/[^0-9]/g, '') || '';
+    // Convert Saudi 05xxxxxxxx → 9665xxxxxxxx for wa.me
+    if (phone.startsWith('0')) phone = '966' + phone.slice(1);
+    const waUrl = phone
+      ? `https://wa.me/${phone}?text=${encodeURIComponent(waMessage)}`
+      : `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
+    window.open(waUrl, '_blank');
   };
 
   // Download PDF only
