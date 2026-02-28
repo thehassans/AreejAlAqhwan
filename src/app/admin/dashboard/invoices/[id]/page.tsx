@@ -113,18 +113,30 @@ th { border-bottom: 1px solid #000; }
   const whatsappUrl = useMemo(() => {
     if (!invoice) return '#';
     const waMessage = [
-      `🌷 أريج الأقحوان`,
-      `━━━━━━━━━━━━━━`,
+      `Dear ${invoice.customerName},`,
+      ``,
+      `Thank you for your trust and for choosing "Areej Al-Aqahwan" to be a part of your story. Every flower in our store has been lovingly selected, and every gift carefully packaged to bring joy to you and your loved ones. We hope this arrangement fills your day with beauty and fragrance.`,
+      ``,
+      `With love,`,
+      `The Areej Al-Aqahwan Team 🌷`,
+      ``,
+      `────────────────`,
+      ``,
+      `عزيزي/عزيزتي ${invoice.customerName}،`,
+      ``,
+      `نشكركم على ثقتكم واختياركم "أريج الأقهوان" لتكون جزءًا من قصتكم. كل زهرة في متجرنا مختارة بعناية، وكل هدية مُغلفة بحرص لتُضفي البهجة على يومكم ويوم أحبائكم. نتمنى أن تُملأ هذه الباقة يومكم بالجمال والعبير.`,
+      ``,
+      `مع خالص الحب،`,
+      `فريق أريج الأقهوان 🌷`,
+      ``,
+      `────────────────`,
       `فاتورة رقم: ${invoice.invoiceNumber}`,
-      `العميل: ${invoice.customerName}`,
       `التاريخ: ${fmtDate(invoice.createdAt)}`,
       ``,
       ...invoice.items.map((item, i) => `${i+1}. ${item.nameAr || item.name} × ${item.quantity} = ${fmtNum(item.total)} ر.س`),
       ``,
       invoice.vatAmount > 0 ? `ضريبة (${invoice.vat}%): ${fmtNum(invoice.vatAmount)} ر.س` : null,
       `الإجمالي: ${fmtNum(invoice.total)} ر.س`,
-      ``,
-      `شكراً لثقتكم 🌸`,
     ].filter(Boolean).join('\n');
 
     let phone = invoice.customerPhone?.replace(/[^0-9]/g, '') || '';

@@ -38,7 +38,27 @@ export default function InvoicesPage() {
   };
 
   const getWhatsAppUrl = (inv: Invoice) => {
-    const msg = `🌷 أريج الأقحوان\nفاتورة رقم: ${inv.invoiceNumber}\nالعميل: ${inv.customerName}\nالمجموع: ${inv.total} ر.س\nشكراً لثقتكم 🌸`;
+    const msg = [
+      `Dear ${inv.customerName},`,
+      ``,
+      `Thank you for your trust and for choosing "Areej Al-Aqahwan" to be a part of your story. Every flower in our store has been lovingly selected, and every gift carefully packaged to bring joy to you and your loved ones. We hope this arrangement fills your day with beauty and fragrance.`,
+      ``,
+      `With love,`,
+      `The Areej Al-Aqahwan Team 🌷`,
+      ``,
+      `────────────────`,
+      ``,
+      `عزيزي/عزيزتي ${inv.customerName}،`,
+      ``,
+      `نشكركم على ثقتكم واختياركم "أريج الأقهوان" لتكون جزءًا من قصتكم. كل زهرة في متجرنا مختارة بعناية، وكل هدية مُغلفة بحرص لتُضفي البهجة على يومكم ويوم أحبائكم. نتمنى أن تُملأ هذه الباقة يومكم بالجمال والعبير.`,
+      ``,
+      `مع خالص الحب،`,
+      `فريق أريج الأقهوان 🌷`,
+      ``,
+      `────────────────`,
+      `فاتورة رقم: ${inv.invoiceNumber}`,
+      `الإجمالي: ${inv.total} ر.س`,
+    ].join('\n');
     let phone = (inv.customerPhone || '').replace(/[^0-9]/g, '');
     if (phone.startsWith('0')) phone = '966' + phone.slice(1);
     return phone
