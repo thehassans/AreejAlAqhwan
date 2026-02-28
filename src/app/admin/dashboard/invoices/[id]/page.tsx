@@ -114,28 +114,19 @@ th { border-bottom: 1px solid #000; }
     if (!invoice) return;
 
     const waMessage = [
+      `🌷 أريج الأقحوان`,
+      `━━━━━━━━━━━━━━`,
       `فاتورة رقم: ${invoice.invoiceNumber}`,
       `العميل: ${invoice.customerName}`,
       `التاريخ: ${fmtDate(invoice.createdAt)}`,
       ``,
       ...invoice.items.map((item, i) => `${i+1}. ${item.nameAr || item.name} × ${item.quantity} = ${fmtNum(item.total)} ر.س`),
       ``,
+      invoice.vatAmount > 0 ? `ضريبة (${invoice.vat}%): ${fmtNum(invoice.vatAmount)} ر.س` : null,
       `الإجمالي: ${fmtNum(invoice.total)} ر.س`,
       ``,
-      `━━━━━━━━━━━━━━━━━━━━━`,
-      ``,
-      `عميلنا العزيز،`,
-      `شكراً لثقتكم واختياركم "أريج الأقحوان" لتكون جزءاً من قصتكم. لقد تم اختيار كل زهرة في متجرنا بحب، وتغليف كل هدية بعناية فائقة لتدخل البهجة على قلوبكم وقلوب من تحبون. نتمنى أن يملأ هذا التنسيق يومكم بالجمال والعطر الفواح.`,
-      ``,
-      `مع خالص الحب،`,
-      `فريق أريج الأقحوان 🌷`,
-      ``,
-      `Dear valued customer,`,
-      `Thank you for your trust and for choosing "Areej Al-Aqhawan" to be part of your story. Every flower in our store has been selected with love, and every gift has been carefully wrapped to bring joy to your heart and to the hearts of those you cherish. We hope this arrangement fills your day with beauty and a delightful fragrance.`,
-      ``,
-      `With sincere love,`,
-      `Areej Al-Aqhawan Team 🌷`,
-    ].join('\n');
+      `شكراً لثقتكم 🌸`,
+    ].filter(Boolean).join('\n');
 
     let phone = invoice.customerPhone?.replace(/[^0-9]/g, '') || '';
     // Convert Saudi 05xxxxxxxx → 9665xxxxxxxx for wa.me
