@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, use, useCallback } from 'react';
+import { useEffect, useState, useRef, use, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { FiPrinter, FiArrowRight, FiDownload } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa6';
@@ -109,10 +109,9 @@ th { border-bottom: 1px solid #000; }
     setTimeout(() => w.print(), 500);
   }, [fontDataUrl]);
 
-  // WhatsApp: open WhatsApp with invoice message directly (no PDF to avoid stuck screen)
-  const handleWhatsApp = () => {
-    if (!invoice) return;
-
+  // Compute WhatsApp URL as derived value so it can be used directly in an <a> href
+  const whatsappUrl = useMemo(() => {
+    if (!invoice) return '#';
     const waMessage = [
       `🌷 أريج الأقحوان`,
       `━━━━━━━━━━━━━━`,
@@ -129,13 +128,11 @@ th { border-bottom: 1px solid #000; }
     ].filter(Boolean).join('\n');
 
     let phone = invoice.customerPhone?.replace(/[^0-9]/g, '') || '';
-    // Convert Saudi 05xxxxxxxx → 9665xxxxxxxx for wa.me
     if (phone.startsWith('0')) phone = '966' + phone.slice(1);
-    const waUrl = phone
+    return phone
       ? `https://wa.me/${phone}?text=${encodeURIComponent(waMessage)}`
       : `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
-    window.open(waUrl, '_blank');
-  };
+  }, [invoice]);
 
   // Download PDF only
   const handleDownloadPDF = async () => {
@@ -189,9 +186,9 @@ th { border-bottom: 1px solid #000; }
           <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors">
             <FiDownload size={14} /> PDF
           </button>
-          <button onClick={handleWhatsApp} className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors">
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors">
             <FaWhatsapp size={14} /> واتساب
-          </button>
+          </a>
           <button onClick={handlePrintFn} className="flex items-center gap-2 px-3 py-2 bg-gray-800 text-white rounded-xl text-sm font-medium hover:bg-gray-700 transition-colors">
             <FiPrinter size={14} /> طباعة
           </button>
