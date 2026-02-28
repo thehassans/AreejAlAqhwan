@@ -37,9 +37,13 @@ export default function InvoicesPage() {
     }
   };
 
-  const handleWhatsApp = (inv: Invoice) => {
-    const msg = `فاتورة رقم: ${inv.invoiceNumber}\nالعميل: ${inv.customerName}\nالمجموع: ${inv.total} ر.س`;
-    window.open(`https://wa.me/${inv.customerPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+  const getWhatsAppUrl = (inv: Invoice) => {
+    const msg = `🌷 أريج الأقحوان\nفاتورة رقم: ${inv.invoiceNumber}\nالعميل: ${inv.customerName}\nالمجموع: ${inv.total} ر.س\nشكراً لثقتكم 🌸`;
+    let phone = (inv.customerPhone || '').replace(/[^0-9]/g, '');
+    if (phone.startsWith('0')) phone = '966' + phone.slice(1);
+    return phone
+      ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
+      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
   };
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-[#5B7B6D] border-t-transparent rounded-full" /></div>;
@@ -81,7 +85,7 @@ export default function InvoicesPage() {
                       <div className="flex items-center gap-2">
                         <Link href={`/admin/dashboard/invoices/${inv._id}`} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title="عرض"><FiEye size={16} /></Link>
                         <Link href={`/admin/dashboard/invoices/${inv._id}?print=true`} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg" title="طباعة"><FiPrinter size={16} /></Link>
-                        <button onClick={() => handleWhatsApp(inv)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg" title="واتساب"><FaWhatsapp size={16} /></button>
+                        <a href={getWhatsAppUrl(inv)} target="_blank" rel="noopener noreferrer" className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg" title="واتساب"><FaWhatsapp size={16} /></a>
                         <button onClick={() => handleDelete(inv._id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg" title="حذف"><FiTrash2 size={16} /></button>
                       </div>
                     </td>
