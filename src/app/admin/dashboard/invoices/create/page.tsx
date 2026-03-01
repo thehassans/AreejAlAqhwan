@@ -230,12 +230,17 @@ export default function CreateInvoicePage() {
                 </div>
                 <div className="col-span-2">
                   {i === 0 && <label className="block text-xs text-gray-500 mb-1">الكمية</label>}
-                  <input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(i, 'quantity', parseInt(e.target.value) || 0)}
+                  <input type="number" min="1" value={item.quantity}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => { const v = parseInt(e.target.value); updateItem(i, 'quantity', isNaN(v) ? 1 : Math.max(1, v)); }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-[#5B7B6D] outline-none" />
                 </div>
                 <div className="col-span-2">
                   {i === 0 && <label className="block text-xs text-gray-500 mb-1">السعر</label>}
-                  <input type="number" min="0" step="0.01" value={item.unitPrice} onChange={(e) => updateItem(i, 'unitPrice', parseFloat(e.target.value) || 0)}
+                  <input type="number" min="0" step="0.01" value={item.unitPrice === 0 ? '' : item.unitPrice}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => { const v = parseFloat(e.target.value); updateItem(i, 'unitPrice', isNaN(v) ? 0 : v); }}
+                    placeholder="0.00"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-[#5B7B6D] outline-none" />
                 </div>
                 <div className="col-span-1 text-center font-bold text-sm py-2">{item.total.toFixed(2)}</div>
