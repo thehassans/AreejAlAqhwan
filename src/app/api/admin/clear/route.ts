@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
+import dbConnect from '@/lib/mongodb';
 import { getAdminFromToken } from '@/lib/auth';
 import Invoice from '@/models/Invoice';
 import Order from '@/models/Order';

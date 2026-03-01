@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import dbConnect from '@/lib/db';
+import dbConnect from '@/lib/mongodb';
 import Admin from '@/models/Admin';
 import { getAdminFromToken } from '@/lib/auth';
 
