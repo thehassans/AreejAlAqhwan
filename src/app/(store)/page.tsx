@@ -32,22 +32,33 @@ export default function HomePage() {
   return (
     <div className="bg-[#FAFAF8]">
       {/* Hero Banner Video */}
-      <section className="relative h-[70vh] sm:h-[80vh] overflow-hidden">
-        <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover">
+      <section className="relative h-[85vh] lg:h-screen overflow-hidden">
+        <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover object-center">
           <source src="/banner.webm" type="video/webm" />
           <source src="/banner.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/60" />
-        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold mb-4 drop-shadow-lg">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/70" />
+        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-6 pt-16 lg:pt-20">
+          <span className="inline-block px-4 py-1.5 bg-white/15 backdrop-blur-sm border border-white/30 rounded-full text-xs sm:text-sm font-medium mb-5 tracking-widest uppercase">
+            {locale === 'ar' ? 'مرحباً بكم' : 'Welcome'}
+          </span>
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold mb-5 drop-shadow-lg leading-tight">
             {locale === 'ar' ? 'أريج الأقحوان' : 'Areej Al Aqhwan'}
           </h1>
-          <p className="text-base sm:text-lg lg:text-xl max-w-2xl mb-8 opacity-90 drop-shadow">
+          <p className="text-base sm:text-xl lg:text-2xl max-w-3xl mb-10 opacity-90 drop-shadow font-light">
             {locale === 'ar' ? 'زهور وهدايا فاخرة لكل مناسبة' : 'Premium flowers & gifts for every occasion'}
           </p>
-          <Link href="/products" className="px-8 py-3 bg-[#5B7B6D] text-white rounded-full font-semibold hover:bg-[#4a6a5c] transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95">
-            {locale === 'ar' ? 'تسوق الآن' : 'Shop Now'}
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/products" className="px-8 py-3.5 bg-[#5B7B6D] text-white rounded-full font-semibold hover:bg-[#4a6a5c] transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95 text-sm sm:text-base">
+              {locale === 'ar' ? 'تسوق الآن' : 'Shop Now'}
+            </Link>
+            <Link href="/products" className="px-8 py-3.5 bg-white/15 backdrop-blur-sm border border-white/40 text-white rounded-full font-semibold hover:bg-white/25 transition-all duration-300 text-sm sm:text-base">
+              {locale === 'ar' ? 'اكتشف المزيد' : 'Explore'}
+            </Link>
+          </div>
+        </div>
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-white/60 animate-bounce">
+          <div className="w-0.5 h-8 bg-white/40 rounded-full" />
         </div>
       </section>
 

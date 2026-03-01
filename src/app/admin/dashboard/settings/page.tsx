@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { FiUpload } from 'react-icons/fi';
+import { FiUpload, FiEye, FiEyeOff, FiAlertTriangle } from 'react-icons/fi';
 import { FaInstagram, FaFacebookF, FaXTwitter, FaPinterestP, FaTiktok, FaSnapchat } from 'react-icons/fa6';
 import toast from 'react-hot-toast';
 
@@ -20,6 +20,14 @@ interface Settings {
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Change password state
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
+  const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false });
+  const [pwSaving, setPwSaving] = useState(false);
+
+  // Clear data state
+  const [clearing, setClearing] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/settings').then((r) => r.json()).then(setSettings).catch(console.error);
@@ -40,6 +48,38 @@ export default function SettingsPage() {
       else toast.error('فشل حفظ الإعدادات');
     } catch { toast.error('حدث خطأ'); }
     finally { setSaving(false); }
+  };
+
+  const handleChangePassword = async () => {
+    if (!pwForm.current || !pwForm.next || !pwForm.confirm) return toast.error('جميع الحقول مطلوبة');
+    if (pwForm.next !== pwForm.confirm) return toast.error('كلمتا المرور الجديدتان غير متطابقتين');
+    if (pwForm.next.length < 6) return toast.error('كلمة المرور الجديدة 6 أحرف على الأقل');
+    setPwSaving(true);
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword: pwForm.current, newPassword: pwForm.next }),
+      });
+      const data = await res.json();
+      if (res.ok) { toast.success('تم تغيير كلمة المرور'); setPwForm({ current: '', next: '', confirm: '' }); }
+      else toast.error(data.error || 'فشل تغيير كلمة المرور');
+    } catch { toast.error('حدث خطأ'); }
+    finally { setPwSaving(false); }
+  };
+
+  const handleClear = async (collection: string, label: string) => {
+    if (!confirm(`هل أنت متأكد من حذف جميع ${label}؟ هذا الإجراء لا يمكن التراجع عنه.`)) return;
+    setClearing(collection);
+    try {
+      const res = await fetch('/api/admin/clear', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collection }),
+      });
+      const data = await res.json();
+      if (res.ok) toast.success(`تم حذف ${data.deleted} ${label}`);
+      else toast.error(data.error || 'فشل الحذف');
+    } catch { toast.error('حدث خطأ'); }
+    finally { setClearing(null); }
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'logo' | 'banner') => {
@@ -170,6 +210,57 @@ export default function SettingsPage() {
               </label>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
+        <h2 className="text-lg font-bold text-gray-800 border-b pb-2">تغيير كلمة المرور</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {(['current', 'next', 'confirm'] as const).map((field) => {
+            const labels = { current: 'كلمة المرور الحالية', next: 'كلمة المرور الجديدة', confirm: 'تأكيد كلمة المرور الجديدة' };
+            return (
+              <div key={field}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{labels[field]}</label>
+                <div className="relative">
+                  <input type={showPw[field] ? 'text' : 'password'} value={pwForm[field]}
+                    onChange={(e) => setPwForm({ ...pwForm, [field]: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm pr-10" dir="ltr" />
+                  <button type="button" onClick={() => setShowPw({ ...showPw, [field]: !showPw[field] })}
+                    className="absolute inset-y-0 right-2 flex items-center px-1 text-gray-400 hover:text-gray-600">
+                    {showPw[field] ? <FiEyeOff size={14} /> : <FiEye size={14} />}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <button onClick={handleChangePassword} disabled={pwSaving}
+          className="px-6 py-2 bg-[#5B7B6D] text-white rounded-xl text-sm font-medium hover:bg-[#4a6a5c] disabled:opacity-50">
+          {pwSaving ? 'جاري التغيير...' : 'تغيير كلمة المرور'}
+        </button>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <FiAlertTriangle className="text-red-500" size={20} />
+          <h2 className="text-lg font-bold text-red-600">منطقة الخطر</h2>
+        </div>
+        <p className="text-sm text-gray-500">هذه الإجراءات لا يمكن التراجع عنها. تأكد قبل المتابعة.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[
+            { collection: 'invoices', label: 'الفواتير', desc: 'حذف جميع الفواتير من قاعدة البيانات' },
+            { collection: 'orders', label: 'الطلبات', desc: 'حذف جميع الطلبات من قاعدة البيانات' },
+            { collection: 'customers', label: 'العملاء', desc: 'حذف جميع العملاء من قاعدة البيانات' },
+          ].map(({ collection, label, desc }) => (
+            <div key={collection} className="border border-red-100 rounded-xl p-4 bg-red-50">
+              <p className="font-semibold text-gray-800 text-sm mb-1">مسح {label}</p>
+              <p className="text-xs text-gray-500 mb-3">{desc}</p>
+              <button onClick={() => handleClear(collection, label)} disabled={clearing === collection}
+                className="w-full px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
+                {clearing === collection ? 'جاري الحذف...' : `حذف كل ${label}`}
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 
