@@ -95,9 +95,9 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
     if (!w) return;
     const printStyles = `
 @font-face { font-family: "SaudiRiyalSymbol"; src: url("${fontDataUrl}") format("truetype"); }
-@page { size: 80mm 70mm; margin: 0; }
+@page { size: 80mm auto; margin: 0; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: "Courier New", monospace; font-size: 9px; width: 72mm; margin: 0 auto; padding: 3mm; color: #000; direction: rtl; }
+body { font-family: "Courier New", monospace; font-size: 9px; width: 72mm; margin: 0 auto; padding: 3mm; color: #000; direction: ltr; }
 .sar { font-family: "SaudiRiyalSymbol", sans-serif; font-weight: bold; }
 img { max-width: 100%; }
 table { width: 100%; border-collapse: collapse; }
@@ -219,7 +219,7 @@ th { border-bottom: 1px solid #000; }
 
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '3px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 'bold' }}>{settings?.storeName || 'أريج الأخوان'}</div>
+            <div style={{ fontSize: '11px', fontWeight: 'bold' }}>Areej Al Aqhwan</div>
             {settings?.phone && <div style={{ fontSize: '8px', color: '#333' }}>{settings.phone}</div>}
             {settings?.address && <div style={{ fontSize: '8px', color: '#333' }}>{settings.address}</div>}
           </div>
@@ -228,10 +228,10 @@ th { border-bottom: 1px solid #000; }
 
           {/* Invoice info */}
           <div style={{ fontSize: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}><span>رقم الفاتورة:</span><span>{invoice.invoiceNumber}</span></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}><span>التاريخ:</span><span>{fmtDate(invoice.createdAt)}</span></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}><span>العميل:</span><span>{invoice.customerName}</span></div>
-            {invoice.customerPhone && <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}><span>الجوال:</span><span dir="ltr">{invoice.customerPhone}</span></div>}
+            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}><span>Invoice #:</span><span>{invoice.invoiceNumber}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}><span>Date:</span><span>{fmtDate(invoice.createdAt)}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}><span>Customer:</span><span>{invoice.customerName}</span></div>
+            {invoice.customerPhone && <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}><span>Phone:</span><span>{invoice.customerPhone}</span></div>}
           </div>
 
           <hr style={{ border: 'none', borderTop: '1px dashed #000', margin: '3px 0' }} />
@@ -240,16 +240,16 @@ th { border-bottom: 1px solid #000; }
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={{ fontSize: '8px', textAlign: 'right', padding: '2px 1px', borderBottom: '1px solid #000' }}>المنتج</th>
-                <th style={{ fontSize: '8px', textAlign: 'center', padding: '2px 1px', borderBottom: '1px solid #000', width: '22px' }}>كمية</th>
-                <th style={{ fontSize: '8px', textAlign: 'left', padding: '2px 1px', borderBottom: '1px solid #000', width: '45px' }}>السعر</th>
-                <th style={{ fontSize: '8px', textAlign: 'left', padding: '2px 1px', borderBottom: '1px solid #000', width: '45px' }}>المجموع</th>
+                <th style={{ fontSize: '8px', textAlign: 'left', padding: '2px 1px', borderBottom: '1px solid #000' }}>Item</th>
+                <th style={{ fontSize: '8px', textAlign: 'center', padding: '2px 1px', borderBottom: '1px solid #000', width: '22px' }}>Qty</th>
+                <th style={{ fontSize: '8px', textAlign: 'left', padding: '2px 1px', borderBottom: '1px solid #000', width: '45px' }}>Price</th>
+                <th style={{ fontSize: '8px', textAlign: 'left', padding: '2px 1px', borderBottom: '1px solid #000', width: '45px' }}>Total</th>
               </tr>
             </thead>
             <tbody>
               {invoice.items.map((item, i) => (
                 <tr key={i}>
-                  <td style={{ fontSize: '8px', padding: '1px' }}>{item.nameAr || item.name}</td>
+                  <td style={{ fontSize: '8px', padding: '1px' }}>{item.name || item.nameAr}</td>
                   <td style={{ fontSize: '8px', padding: '1px', textAlign: 'center' }}>{item.quantity}</td>
                   <td style={{ fontSize: '8px', padding: '1px', textAlign: 'left' }}>{fmtNum(item.unitPrice)}</td>
                   <td style={{ fontSize: '8px', padding: '1px', textAlign: 'left', fontWeight: 600 }}>{fmtNum(item.total)}</td>
@@ -260,27 +260,27 @@ th { border-bottom: 1px solid #000; }
 
           <hr style={{ border: 'none', borderTop: '1px dashed #000', margin: '3px 0' }} />
 
-          {/* Totals with SAMA SAR icon */}
+          {/* Totals */}
           <div style={{ fontSize: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1px 0' }}>
-              <span>المجموع الفرعي</span>
-              <span>{fmtNum(invoice.subtotal)} <span className="sar" style={{ fontFamily: 'SaudiRiyalSymbol, sans-serif', fontWeight: 'bold' }}>{SAR_CHAR}</span></span>
+              <span>Subtotal</span>
+              <span>SAR {fmtNum(invoice.subtotal)}</span>
             </div>
             {discountAmount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1px 0', color: 'red' }}>
-                <span>الخصم</span>
-                <span>-{fmtNum(discountAmount)} <span className="sar" style={{ fontFamily: 'SaudiRiyalSymbol, sans-serif', fontWeight: 'bold' }}>{SAR_CHAR}</span></span>
+                <span>Discount</span>
+                <span>-SAR {fmtNum(discountAmount)}</span>
               </div>
             )}
             {invoice.vatAmount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1px 0' }}>
-                <span>ضريبة ({invoice.vat}%)</span>
-                <span>{fmtNum(invoice.vatAmount)} <span className="sar" style={{ fontFamily: 'SaudiRiyalSymbol, sans-serif', fontWeight: 'bold' }}>{SAR_CHAR}</span></span>
+                <span>VAT ({invoice.vat}%)</span>
+                <span>SAR {fmtNum(invoice.vatAmount)}</span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10px', borderTop: '1px solid #000', paddingTop: '2px', marginTop: '2px' }}>
-              <span>الإجمالي</span>
-              <span>{fmtNum(invoice.total)} <span className="sar" style={{ fontFamily: 'SaudiRiyalSymbol, sans-serif', fontWeight: 'bold' }}>{SAR_CHAR}</span></span>
+              <span>TOTAL</span>
+              <span>SAR {fmtNum(invoice.total)}</span>
             </div>
           </div>
 
@@ -288,7 +288,7 @@ th { border-bottom: 1px solid #000; }
             <>
               <hr style={{ border: 'none', borderTop: '1px dashed #000', margin: '3px 0' }} />
               <div style={{ fontSize: '7px', padding: '2px', background: '#f5f5f5' }}>
-                <strong>ملاحظات:</strong> {invoice.notes}
+                <strong>Notes:</strong> {invoice.notes}
               </div>
             </>
           )}
@@ -305,8 +305,8 @@ th { border-bottom: 1px solid #000; }
 
           {/* Footer */}
           <div style={{ textAlign: 'center', fontSize: '7px', color: '#555' }}>
-            <div>شكراً لتعاملكم معنا</div>
-            <div style={{ marginTop: '1px' }}>Thank you for your business</div>
+            <div style={{ fontWeight: 'bold' }}>Thank you for your business!</div>
+            <div style={{ marginTop: '1px' }}>areejalaqhwan.com</div>
           </div>
         </div>
       </div>

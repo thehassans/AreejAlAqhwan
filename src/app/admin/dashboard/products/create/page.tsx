@@ -15,6 +15,8 @@ export default function CreateProductPage() {
   const [category, setCategory] = useState('عام');
   const [inStock, setInStock] = useState(true);
   const [featured, setFeatured] = useState(false);
+  const [discount, setDiscount] = useState('');
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -44,7 +46,7 @@ export default function CreateProductPage() {
       const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, nameAr, description, descriptionAr, price: parseFloat(price), category, inStock, featured, images }),
+        body: JSON.stringify({ name, nameAr, description, descriptionAr, price: parseFloat(price), category, inStock, featured, images, discount: parseFloat(discount) || 0, discountType }),
       });
       if (res.ok) {
         toast.success('تم إضافة المنتج بنجاح');
@@ -95,16 +97,29 @@ export default function CreateProductPage() {
               {['عام', 'زهور', 'باقات', 'هدايا', 'شوكولاتة', 'عطور', 'تنسيقات'].map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-          <div className="flex items-end gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={inStock} onChange={(e) => setInStock(e.target.checked)} className="w-4 h-4 accent-[#5B7B6D]" />
-              <span className="text-sm">متوفر</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="w-4 h-4 accent-[#5B7B6D]" />
-              <span className="text-sm">مميز</span>
-            </label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">نوع الخصم</label>
+            <select value={discountType} onChange={(e) => setDiscountType(e.target.value as 'percentage' | 'fixed')}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" title="نوع الخصم">
+              <option value="percentage">نسبة مئوية (%)</option>
+              <option value="fixed">مبلغ ثابت (ر.س)</option>
+            </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">قيمة الخصم</label>
+            <input type="number" min="0" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} placeholder="0"
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
+          </div>
+        </div>
+        <div className="flex items-center gap-6">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={inStock} onChange={(e) => setInStock(e.target.checked)} className="w-4 h-4 accent-[#5B7B6D]" />
+            <span className="text-sm">متوفر</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="w-4 h-4 accent-[#5B7B6D]" />
+            <span className="text-sm">مميز</span>
+          </label>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">صور المنتج</label>

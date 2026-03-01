@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiPlus, FiTrash2, FiPrinter, FiSearch } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiPrinter, FiSearch, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import SarIcon from '@/components/SarIcon';
 
@@ -38,6 +38,18 @@ const tierEmoji: Record<string, string> = {
   bronze: '🥉', silver: '🥈', gold: '🥇', platinum: '💎',
 };
 
+interface CatalogProduct {
+  _id: string;
+  name: string;
+  nameAr: string;
+  price: number;
+  discount: number;
+  discountType: string;
+  category: string;
+  images: string[];
+  inStock: boolean;
+}
+
 interface SettingsData {
   vatEnabled: boolean;
   vatPercentage: number;
@@ -61,6 +73,10 @@ export default function CreateInvoicePage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const phoneRef = useRef<HTMLDivElement>(null);
+  const [catalog, setCatalog] = useState<CatalogProduct[]>([]);
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<number>(0);
+  const [pickerSearch, setPickerSearch] = useState('');
 
   useEffect(() => {
     fetch('/api/settings').then((r) => r.json()).then((s) => {
@@ -70,6 +86,7 @@ export default function CreateInvoicePage() {
       setInvoiceNumber(`${prefix}-${String(num).padStart(4, '0')}`);
     }).catch(console.error);
     fetch('/api/customers').then(r => r.json()).then(data => setAllCustomers(Array.isArray(data) ? data : [])).catch(console.error);
+    fetch('/api/products').then(r => r.json()).then(data => setCatalog(Array.isArray(data) ? data : [])).catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -88,6 +105,18 @@ export default function CreateInvoicePage() {
   const selectCustomer = (c: Customer) => {
     setCustomerName(c.name); setCustomerPhone(c.phone); setCustomerEmail(c.email || '');
     setSelectedCustomer(c); setShowSuggestions(false);
+  };
+
+  const openPicker = (index: number) => { setPickerTarget(index); setPickerSearch(''); setShowPicker(true); };
+
+  const selectFromCatalog = (p: CatalogProduct) => {
+    const effectivePrice = p.discount > 0
+      ? (p.discountType === 'percentage' ? p.price * (1 - p.discount / 100) : Math.max(0, p.price - p.discount))
+      : p.price;
+    const newItems = [...items];
+    newItems[pickerTarget] = { ...newItems[pickerTarget], name: p.name, nameAr: p.nameAr, unitPrice: effectivePrice, total: newItems[pickerTarget].quantity * effectivePrice };
+    setItems(newItems);
+    setShowPicker(false);
   };
 
   const addItem = () => setItems([...items, { name: '', nameAr: '', quantity: 1, unitPrice: 0, total: 0 }]);
@@ -147,9 +176,63 @@ export default function CreateInvoicePage() {
     }
   };
 
+  const filteredCatalog = catalog.filter(p =>
+    p.name.toLowerCase().includes(pickerSearch.toLowerCase()) ||
+    p.nameAr.includes(pickerSearch) ||
+    p.category.includes(pickerSearch)
+  );
+
   return (
     <div className="space-y-6 max-w-4xl">
       <h1 className="text-2xl font-bold text-gray-800">إنشاء فاتورة جديدة</h1>
+
+      {/* Product picker modal */}
+      {showPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowPicker(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="font-bold text-gray-800">اختر منتجاً من الكتالوج</h3>
+              <button onClick={() => setShowPicker(false)} className="p-1 hover:bg-gray-100 rounded-lg"><FiX size={18} /></button>
+            </div>
+            <div className="p-3 border-b">
+              <div className="relative">
+                <FiSearch size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input autoFocus type="text" value={pickerSearch} onChange={e => setPickerSearch(e.target.value)}
+                  placeholder="ابحث عن منتج..." dir="rtl"
+                  className="w-full px-4 py-2 pr-9 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#5B7B6D] outline-none" />
+              </div>
+            </div>
+            <div className="overflow-y-auto flex-1">
+              {filteredCatalog.length === 0 ? (
+                <div className="p-6 text-center text-gray-400 text-sm">لا توجد منتجات مطابقة</div>
+              ) : filteredCatalog.map(p => {
+                const effectivePrice = p.discount > 0
+                  ? (p.discountType === 'percentage' ? p.price * (1 - p.discount / 100) : Math.max(0, p.price - p.discount))
+                  : p.price;
+                return (
+                  <button key={p._id} onClick={() => selectFromCatalog(p)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#5B7B6D]/5 border-b last:border-0 text-right transition-colors">
+                    {p.images?.[0] && <img src={p.images[0]} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-800 text-sm truncate">{p.nameAr}</p>
+                      <p className="text-xs text-gray-400 truncate">{p.name} · {p.category}</p>
+                    </div>
+                    <div className="text-left flex-shrink-0">
+                      {p.discount > 0 && (
+                        <p className="text-xs text-gray-400 line-through">{p.price.toFixed(2)}</p>
+                      )}
+                      <p className="text-sm font-bold text-[#5B7B6D]">{effectivePrice.toFixed(2)} ر.س</p>
+                      {p.discount > 0 && (
+                        <p className="text-xs text-red-500">خصم {p.discountType === 'percentage' ? `${p.discount}%` : `${p.discount} ر.س`}</p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
         <div className="flex items-center justify-between">
@@ -244,7 +327,10 @@ export default function CreateInvoicePage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-[#5B7B6D] outline-none" />
                 </div>
                 <div className="col-span-1 text-center font-bold text-sm py-2">{item.total.toFixed(2)}</div>
-                <div className="col-span-1">
+                <div className="col-span-1 flex items-end gap-1">
+                  <button onClick={() => openPicker(i)} title="اختر من المنتجات" className="p-2 text-[#5B7B6D] hover:bg-[#5B7B6D]/10 rounded-lg">
+                    <FiSearch size={14} />
+                  </button>
                   <button onClick={() => removeItem(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" disabled={items.length === 1}>
                     <FiTrash2 size={14} />
                   </button>

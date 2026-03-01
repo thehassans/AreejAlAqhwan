@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 interface Product {
   name: string; nameAr: string; description: string; descriptionAr: string;
   price: number; category: string; inStock: boolean; featured: boolean; images: string[];
+  discount: number; discountType: string;
 }
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -95,16 +96,29 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               {['عام', 'زهور', 'باقات', 'هدايا', 'شوكولاتة', 'عطور', 'تنسيقات'].map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-          <div className="flex items-end gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={product.inStock} onChange={(e) => update('inStock', e.target.checked)} className="w-4 h-4 accent-[#5B7B6D]" />
-              <span className="text-sm">متوفر</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={product.featured} onChange={(e) => update('featured', e.target.checked)} className="w-4 h-4 accent-[#5B7B6D]" />
-              <span className="text-sm">مميز</span>
-            </label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">نوع الخصم</label>
+            <select value={product.discountType || 'percentage'} onChange={(e) => update('discountType', e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" title="نوع الخصم">
+              <option value="percentage">نسبة مئوية (%)</option>
+              <option value="fixed">مبلغ ثابت (ر.س)</option>
+            </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">قيمة الخصم</label>
+            <input type="number" min="0" step="0.01" value={product.discount || 0} onChange={(e) => update('discount', parseFloat(e.target.value) || 0)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
+          </div>
+        </div>
+        <div className="flex items-center gap-6">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={product.inStock} onChange={(e) => update('inStock', e.target.checked)} className="w-4 h-4 accent-[#5B7B6D]" />
+            <span className="text-sm">متوفر</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={product.featured} onChange={(e) => update('featured', e.target.checked)} className="w-4 h-4 accent-[#5B7B6D]" />
+            <span className="text-sm">مميز</span>
+          </label>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">صور المنتج</label>
