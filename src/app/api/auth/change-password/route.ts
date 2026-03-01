@@ -6,7 +6,7 @@ import { getAdminFromToken } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
-    const payload = await getAdminFromToken(req);
+    const payload = await getAdminFromToken();
     if (!payload) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
 
     await dbConnect();

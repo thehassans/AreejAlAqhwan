@@ -10,7 +10,7 @@ type Collection = typeof ALLOWED[number];
 
 export async function DELETE(req: NextRequest) {
   try {
-    const payload = await getAdminFromToken(req);
+    const payload = await getAdminFromToken();
     if (!payload) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
 
     const { collection } = await req.json() as { collection: Collection };
