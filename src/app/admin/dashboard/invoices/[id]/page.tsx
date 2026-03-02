@@ -97,14 +97,14 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
 @font-face { font-family: "SaudiRiyalSymbol"; src: url("${fontDataUrl}") format("truetype"); }
 @page { size: 80mm auto; margin: 0; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: "Courier New", monospace; font-size: 9px; width: 72mm; margin: 0 auto; padding: 3mm; color: #000; direction: ltr; }
-.sar { font-family: "SaudiRiyalSymbol", sans-serif; font-weight: bold; }
+body { font-family: "Courier New", monospace; font-size: 9px; width: 72mm; margin: 0 auto; padding: 3mm; color: #000; direction: ltr; font-weight: bold; }
+.sar { font-family: "SaudiRiyalSymbol", sans-serif; font-weight: bold; font-size: 10px; }
 img { max-width: 100%; }
 table { width: 100%; border-collapse: collapse; }
-th, td { font-size: 8px; padding: 1px; }
-th { border-bottom: 1px solid #000; }
+th, td { font-size: 8px; padding: 2px 1px; font-weight: bold; }
+th { border-bottom: 2px solid #000; font-size: 9px; }
 `;
-    w.document.write(`<html dir="rtl"><head><title>فاتورة</title><style>${printStyles}</style></head><body>${el.innerHTML}</body></html>`);
+    w.document.write(`<html dir="ltr"><head><title>Invoice</title><style>${printStyles}</style></head><body>${el.innerHTML}</body></html>`);
     w.document.close();
     setTimeout(() => w.print(), 500);
   }, [fontDataUrl]);
@@ -218,20 +218,21 @@ th { border-bottom: 1px solid #000; }
           </div>
 
           {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '3px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 'bold' }}>Areej Al Aqhwan</div>
-            {settings?.phone && <div style={{ fontSize: '8px', color: '#333' }}>{settings.phone}</div>}
-            {settings?.address && <div style={{ fontSize: '8px', color: '#333' }}>{settings.address}</div>}
+          <div style={{ textAlign: 'center', marginBottom: '4px' }}>
+            <div style={{ fontSize: '12px', fontWeight: 'bold', letterSpacing: '0.5px' }}>Areej Al Aqhwan</div>
+            <div style={{ fontSize: '10px', fontWeight: 'bold' }}>أريج الأقحوان</div>
+            {settings?.phone && <div style={{ fontSize: '8px', fontWeight: 'bold', marginTop: '1px' }}>{settings.phone}</div>}
+            {settings?.address && <div style={{ fontSize: '8px', fontWeight: 'bold' }}>{settings.address}</div>}
           </div>
 
           <hr style={{ border: 'none', borderTop: '1px dashed #000', margin: '3px 0' }} />
 
-          {/* Invoice info */}
-          <div style={{ fontSize: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}><span>Invoice #:</span><span>{invoice.invoiceNumber}</span></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}><span>Date:</span><span>{fmtDate(invoice.createdAt)}</span></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}><span>Customer:</span><span>{invoice.customerName}</span></div>
-            {invoice.customerPhone && <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}><span>Phone:</span><span>{invoice.customerPhone}</span></div>}
+          {/* Invoice info - bilingual */}
+          <div style={{ fontSize: '8px', fontWeight: 'bold' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '2px 0' }}><span>Invoice # / رقم الفاتورة</span><span>{invoice.invoiceNumber}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '2px 0' }}><span>Date / التاريخ</span><span>{fmtDate(invoice.createdAt)}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '2px 0' }}><span>Customer / العميل</span><span>{invoice.customerName}</span></div>
+            {invoice.customerPhone && <div style={{ display: 'flex', justifyContent: 'space-between', margin: '2px 0' }}><span>Phone / الجوال</span><span>{invoice.customerPhone}</span></div>}
           </div>
 
           <hr style={{ border: 'none', borderTop: '1px dashed #000', margin: '3px 0' }} />
@@ -240,19 +241,25 @@ th { border-bottom: 1px solid #000; }
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={{ fontSize: '8px', textAlign: 'left', padding: '2px 1px', borderBottom: '1px solid #000' }}>Item</th>
-                <th style={{ fontSize: '8px', textAlign: 'center', padding: '2px 1px', borderBottom: '1px solid #000', width: '22px' }}>Qty</th>
-                <th style={{ fontSize: '8px', textAlign: 'left', padding: '2px 1px', borderBottom: '1px solid #000', width: '45px' }}>Price</th>
-                <th style={{ fontSize: '8px', textAlign: 'left', padding: '2px 1px', borderBottom: '1px solid #000', width: '45px' }}>Total</th>
+                <th style={{ fontSize: '8px', textAlign: 'left', padding: '2px 1px', borderBottom: '2px solid #000' }}>Item / المنتج</th>
+                <th style={{ fontSize: '8px', textAlign: 'center', padding: '2px 1px', borderBottom: '2px solid #000', width: '22px' }}>Qty</th>
+                <th style={{ fontSize: '8px', textAlign: 'left', padding: '2px 1px', borderBottom: '2px solid #000', width: '50px' }}>Price</th>
+                <th style={{ fontSize: '8px', textAlign: 'left', padding: '2px 1px', borderBottom: '2px solid #000', width: '50px' }}>Total</th>
               </tr>
             </thead>
             <tbody>
               {invoice.items.map((item, i) => (
                 <tr key={i}>
-                  <td style={{ fontSize: '8px', padding: '1px' }}>{item.name || item.nameAr}</td>
-                  <td style={{ fontSize: '8px', padding: '1px', textAlign: 'center' }}>{item.quantity}</td>
-                  <td style={{ fontSize: '8px', padding: '1px', textAlign: 'left' }}>{fmtNum(item.unitPrice)}</td>
-                  <td style={{ fontSize: '8px', padding: '1px', textAlign: 'left', fontWeight: 600 }}>{fmtNum(item.total)}</td>
+                  <td style={{ fontSize: '8px', padding: '2px 1px', fontWeight: 'bold' }}>
+                    {item.name && item.nameAr ? `${item.name} / ${item.nameAr}` : (item.name || item.nameAr)}
+                  </td>
+                  <td style={{ fontSize: '8px', padding: '2px 1px', textAlign: 'center', fontWeight: 'bold' }}>{item.quantity}</td>
+                  <td style={{ fontSize: '8px', padding: '2px 1px', textAlign: 'left', fontWeight: 'bold' }}>
+                    {fmtNum(item.unitPrice)} <span style={{ fontFamily: 'SaudiRiyalSymbol, sans-serif', fontWeight: 'bold' }}>{SAR_CHAR}</span>
+                  </td>
+                  <td style={{ fontSize: '8px', padding: '2px 1px', textAlign: 'left', fontWeight: 'bold' }}>
+                    {fmtNum(item.total)} <span style={{ fontFamily: 'SaudiRiyalSymbol, sans-serif', fontWeight: 'bold' }}>{SAR_CHAR}</span>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -260,27 +267,27 @@ th { border-bottom: 1px solid #000; }
 
           <hr style={{ border: 'none', borderTop: '1px dashed #000', margin: '3px 0' }} />
 
-          {/* Totals */}
-          <div style={{ fontSize: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1px 0' }}>
-              <span>Subtotal</span>
-              <span>SAR {fmtNum(invoice.subtotal)}</span>
+          {/* Totals - bilingual */}
+          <div style={{ fontSize: '8px', fontWeight: 'bold' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+              <span>Subtotal / المجموع الفرعي</span>
+              <span>{fmtNum(invoice.subtotal)} <span style={{ fontFamily: 'SaudiRiyalSymbol, sans-serif', fontWeight: 'bold' }}>{SAR_CHAR}</span></span>
             </div>
             {discountAmount > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1px 0', color: 'red' }}>
-                <span>Discount</span>
-                <span>-SAR {fmtNum(discountAmount)}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', color: 'red' }}>
+                <span>Discount / الخصم</span>
+                <span>-{fmtNum(discountAmount)} <span style={{ fontFamily: 'SaudiRiyalSymbol, sans-serif', fontWeight: 'bold' }}>{SAR_CHAR}</span></span>
               </div>
             )}
             {invoice.vatAmount > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1px 0' }}>
-                <span>VAT ({invoice.vat}%)</span>
-                <span>SAR {fmtNum(invoice.vatAmount)}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                <span>VAT / ضريبة ({invoice.vat}%)</span>
+                <span>{fmtNum(invoice.vatAmount)} <span style={{ fontFamily: 'SaudiRiyalSymbol, sans-serif', fontWeight: 'bold' }}>{SAR_CHAR}</span></span>
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10px', borderTop: '1px solid #000', paddingTop: '2px', marginTop: '2px' }}>
-              <span>TOTAL</span>
-              <span>SAR {fmtNum(invoice.total)}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '11px', borderTop: '2px solid #000', paddingTop: '3px', marginTop: '3px' }}>
+              <span>TOTAL / الإجمالي</span>
+              <span>{fmtNum(invoice.total)} <span style={{ fontFamily: 'SaudiRiyalSymbol, sans-serif', fontWeight: 'bold', fontSize: '12px' }}>{SAR_CHAR}</span></span>
             </div>
           </div>
 
@@ -303,10 +310,11 @@ th { border-bottom: 1px solid #000; }
 
           <hr style={{ border: 'none', borderTop: '1px dashed #000', margin: '3px 0' }} />
 
-          {/* Footer */}
-          <div style={{ textAlign: 'center', fontSize: '7px', color: '#555' }}>
-            <div style={{ fontWeight: 'bold' }}>Thank you for your business!</div>
-            <div style={{ marginTop: '1px' }}>areejalaqhwan.com</div>
+          {/* Footer - bilingual */}
+          <div style={{ textAlign: 'center', fontSize: '8px', fontWeight: 'bold' }}>
+            <div>Thank you for your business!</div>
+            <div style={{ marginTop: '1px' }}>شكراً لتعاملكم معنا</div>
+            <div style={{ marginTop: '2px', fontSize: '7px', fontWeight: 'normal' }}>areejalaqhwan.com</div>
           </div>
         </div>
       </div>

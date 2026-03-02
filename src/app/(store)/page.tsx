@@ -33,7 +33,7 @@ export default function HomePage() {
     <div className="bg-[#FAFAF8]">
       {/* Hero Banner Video */}
       <section className="relative h-[85vh] lg:h-screen overflow-hidden">
-        <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover object-center">
+        <video autoPlay muted loop playsInline preload="none" className="absolute inset-0 w-full h-full object-cover object-center">
           <source src="/banner.webm" type="video/webm" />
           <source src="/banner.mp4" type="video/mp4" />
         </video>
@@ -79,11 +79,13 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
-            {featured.slice(0, 8).map((p) => (
+            {featured.slice(0, 8).map((p, idx) => (
               <div key={p._id} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100/80">
                 <Link href={`/products/${p._id}`} className="block">
                   <div className="relative h-52 sm:h-60 bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
                     <Image src={p.images?.[0] || '/logo.png'} alt={locale === 'ar' ? p.nameAr : p.name} fill
+                      priority={idx < 4}
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                       className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
                     <span className="absolute top-3 right-3 px-2.5 py-1 bg-amber-500/90 backdrop-blur-sm text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
                       {locale === 'ar' ? 'مميز' : 'Featured'}
@@ -133,6 +135,7 @@ export default function HomePage() {
                 <Link href={`/products/${p._id}`} className="block">
                   <div className="relative h-52 sm:h-60 bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
                     <Image src={p.images?.[0] || '/logo.png'} alt={locale === 'ar' ? p.nameAr : p.name} fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                       className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
                     {!p.inStock && (
                       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center">
