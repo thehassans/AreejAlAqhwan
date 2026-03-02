@@ -106,25 +106,24 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
     const css = `
 @page { size: 80mm auto; margin: 0; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Courier New', Courier, monospace; font-size: 9px; width: 72mm; margin: 0 auto; padding: 3mm 4mm; color: #000; font-weight: bold; }
+body { font-family: 'Courier New', Courier, monospace; font-size: 9px; width: 72mm; margin: 0 auto; padding: 3mm 4mm; color: #000; font-weight: bold; direction: rtl; }
 img { display: block; margin: 0 auto; }
 table { width: 100%; border-collapse: collapse; }
 td, th { font-size: 8px; font-weight: bold; padding: 2px 3px; vertical-align: top; }
-.hdr th { border-bottom: 2px solid #000; text-align: left; }
-.hdr th.r { text-align: right; }
-.info td.r { text-align: right; }
-.tot td.r { text-align: right; }
-.tot .line td { border-top: 2px solid #000; font-size: 10px; padding-top: 3px; }
+.hdr th { border-bottom: 2px solid #000; }
+.l { text-align: left; }
+.c { text-align: center; }
+.line td { border-top: 2px solid #000; font-size: 10px; padding-top: 3px; }
 hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
 .center { text-align: center; }
 `;
 
     const itemRows = inv.items.map(it =>
       `<tr>
-        <td>${it.name || it.nameAr || '-'}</td>
-        <td style="text-align:center;width:20px">${it.quantity}</td>
-        <td style="text-align:right;width:52px">${fmtNum(it.unitPrice)} SR</td>
-        <td style="text-align:right;width:52px">${fmtNum(it.total)} SR</td>
+        <td>${it.nameAr || it.name || '-'}</td>
+        <td class="c" style="width:20px">${it.quantity}</td>
+        <td class="l" style="width:52px">${fmtNum(it.unitPrice)} SR</td>
+        <td class="l" style="width:52px">${fmtNum(it.total)} SR</td>
       </tr>`
     ).join('');
 
@@ -132,43 +131,45 @@ hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
       <div class="center" style="margin-bottom:5px">
         ${logoRef.current ? `<img src="${logoRef.current}" style="max-width:80px;max-height:32px;margin-bottom:3px">` : ''}
         <div style="font-size:12px">Areej Al Aqhwan</div>
+        <div style="font-size:10px">&#1571;&#1585;&#1610;&#1580; &#1575;&#1604;&#1571;&#1602;&#1581;&#1608;&#1575;&#1606;</div>
         ${sett?.phone ? `<div style="font-size:8px">${sett.phone}</div>` : ''}
         ${sett?.address ? `<div style="font-size:7px">${sett.address}</div>` : ''}
       </div>
       <hr>
-      <table class="info">
-        <tr><td style="width:55%">Invoice #</td><td class="r">${inv.invoiceNumber}</td></tr>
-        <tr><td>Date</td><td class="r">${fmtDate(inv.createdAt)}</td></tr>
-        <tr><td>Customer</td><td class="r">${inv.customerName}</td></tr>
-        ${inv.customerPhone ? `<tr><td>Phone</td><td class="r">${inv.customerPhone}</td></tr>` : ''}
+      <table>
+        <tr><td style="width:55%">&#1585;&#1602;&#1605; &#1575;&#1604;&#1601;&#1575;&#1578;&#1608;&#1585;&#1577;</td><td class="l">${inv.invoiceNumber}</td></tr>
+        <tr><td>&#1575;&#1604;&#1578;&#1575;&#1585;&#1610;&#1582;</td><td class="l">${fmtDate(inv.createdAt)}</td></tr>
+        <tr><td>&#1575;&#1604;&#1593;&#1605;&#1610;&#1604;</td><td class="l">${inv.customerName}</td></tr>
+        ${inv.customerPhone ? `<tr><td>&#1575;&#1604;&#1580;&#1608;&#1575;&#1604;</td><td class="l">${inv.customerPhone}</td></tr>` : ''}
       </table>
       <hr>
       <table>
         <thead class="hdr"><tr>
-          <th>Item</th>
-          <th style="text-align:center;width:20px">Qty</th>
-          <th class="r" style="width:52px">Price</th>
-          <th class="r" style="width:52px">Total</th>
+          <th>&#1575;&#1604;&#1605;&#1606;&#1578;&#1580;</th>
+          <th class="c" style="width:20px">&#1575;&#1604;&#1603;&#1605;&#1610;&#1577;</th>
+          <th class="l" style="width:52px">&#1575;&#1604;&#1587;&#1593;&#1585;</th>
+          <th class="l" style="width:52px">&#1575;&#1604;&#1605;&#1576;&#1604;&#1594;</th>
         </tr></thead>
         <tbody>${itemRows}</tbody>
       </table>
       <hr>
-      <table class="tot">
-        <tr><td style="width:60%">Subtotal</td><td class="r">${fmtNum(inv.subtotal)} SR</td></tr>
-        ${discAmt > 0 ? `<tr style="color:red"><td>Discount</td><td class="r">- ${fmtNum(discAmt)} SR</td></tr>` : ''}
-        ${inv.vatAmount > 0 ? `<tr><td>VAT (${inv.vat}%)</td><td class="r">${fmtNum(inv.vatAmount)} SR</td></tr>` : ''}
-        <tr class="line"><td>TOTAL</td><td class="r">${fmtNum(inv.total)} SR</td></tr>
+      <table>
+        <tr><td style="width:60%">&#1575;&#1604;&#1605;&#1580;&#1605;&#1608;&#1593; &#1575;&#1604;&#1601;&#1585;&#1593;&#1610;</td><td class="l">${fmtNum(inv.subtotal)} SR</td></tr>
+        ${discAmt > 0 ? `<tr style="color:red"><td>&#1575;&#1604;&#1582;&#1589;&#1605;</td><td class="l">- ${fmtNum(discAmt)} SR</td></tr>` : ''}
+        ${inv.vatAmount > 0 ? `<tr><td>&#1590;&#1585;&#1610;&#1576;&#1577; &#1575;&#1604;&#1602;&#1610;&#1605;&#1577; (${inv.vat}%)</td><td class="l">${fmtNum(inv.vatAmount)} SR</td></tr>` : ''}
+        <tr class="line"><td>&#1575;&#1604;&#1573;&#1580;&#1605;&#1575;&#1604;&#1610;</td><td class="l">${fmtNum(inv.total)} SR</td></tr>
       </table>
-      ${inv.notes ? `<hr><div style="font-size:7px">Notes: ${inv.notes}</div>` : ''}
+      ${inv.notes ? `<hr><div style="font-size:7px">&#1605;&#1604;&#1575;&#1581;&#1592;&#1575;&#1578;: ${inv.notes}</div>` : ''}
       ${qrRef.current ? `<div class="center" style="margin-top:5px"><img src="${qrRef.current}" style="width:48px;height:48px"><div style="font-size:6px;margin-top:1px">areejalaqhwan.com</div></div>` : ''}
       <hr>
       <div class="center" style="font-size:8px">
-        <div>Thank you for your business!</div>
+        <div>&#1588;&#1603;&#1585;&#1575;&#1611; &#1604;&#1578;&#1593;&#1575;&#1605;&#1604;&#1603;&#1605; &#1605;&#1593;&#1606;&#1575;</div>
+        <div style="font-size:7px;margin-top:1px">Thank you for your business!</div>
         <div style="font-size:7px;margin-top:1px">areejalaqhwan.com</div>
       </div>
     `;
 
-    w.document.write(`<html><head><title>Invoice</title><style>${css}</style></head><body>${html}</body></html>`);
+    w.document.write(`<html dir="rtl"><head><title>&#1601;&#1575;&#1578;&#1608;&#1585;&#1577;</title><style>${css}</style></head><body>${html}</body></html>`);
     w.document.close();
     setTimeout(() => w.print(), 600);
   }, []);
