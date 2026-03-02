@@ -32,6 +32,12 @@ interface SettingsData {
   vatEnabled: boolean;
   vatPercentage: number;
   logo: string;
+  instagram: string; instagramEnabled: boolean;
+  facebook: string; facebookEnabled: boolean;
+  twitter: string; twitterEnabled: boolean;
+  tiktok: string; tiktokEnabled: boolean;
+  snapchat: string; snapchatEnabled: boolean;
+  pinterest: string; pinterestEnabled: boolean;
 }
 
 const fmtDate = (d: string) => {
@@ -116,11 +122,20 @@ td, th { font-size: 8px; font-weight: bold; padding: 2px 3px; vertical-align: to
 .line td { border-top: 2px solid #000; font-size: 10px; padding-top: 3px; }
 hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
 .center { text-align: center; }
+.sm { font-size: 7px; margin: 1px 0; }
 `;
+
+    const socialLines: string[] = [];
+    if (sett?.instagramEnabled && sett.instagram) socialLines.push(`<div class="sm">&#x1F4F8; Instagram: @${sett.instagram}</div>`);
+    if (sett?.snapchatEnabled && sett.snapchat) socialLines.push(`<div class="sm">&#x1F47B; Snapchat: @${sett.snapchat}</div>`);
+    if (sett?.tiktokEnabled && sett.tiktok) socialLines.push(`<div class="sm">&#x1F3B5; TikTok: @${sett.tiktok}</div>`);
+    if (sett?.twitterEnabled && sett.twitter) socialLines.push(`<div class="sm">&#x1F426; X/Twitter: @${sett.twitter}</div>`);
+    if (sett?.facebookEnabled && sett.facebook) socialLines.push(`<div class="sm">&#x1F4CC; Facebook: ${sett.facebook}</div>`);
+    if (sett?.pinterestEnabled && sett.pinterest) socialLines.push(`<div class="sm">&#x1F4CC; Pinterest: ${sett.pinterest}</div>`);
 
     const itemRows = inv.items.map(it =>
       `<tr>
-        <td>${it.nameAr || it.name || '-'}</td>
+        <td>${it.nameAr || it.name || '-'}<br><span style="font-size:7px;font-weight:normal">${it.name && it.nameAr ? it.name : ''}</span></td>
         <td class="c" style="width:20px">${it.quantity}</td>
         <td class="l" style="width:52px">${fmtNum(it.unitPrice)} SR</td>
         <td class="l" style="width:52px">${fmtNum(it.total)} SR</td>
@@ -137,16 +152,16 @@ hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
       </div>
       <hr>
       <table>
-        <tr><td style="width:55%">&#1585;&#1602;&#1605; &#1575;&#1604;&#1601;&#1575;&#1578;&#1608;&#1585;&#1577;</td><td class="l">${inv.invoiceNumber}</td></tr>
-        <tr><td>&#1575;&#1604;&#1578;&#1575;&#1585;&#1610;&#1582;</td><td class="l">${fmtDate(inv.createdAt)}</td></tr>
-        <tr><td>&#1575;&#1604;&#1593;&#1605;&#1610;&#1604;</td><td class="l">${inv.customerName}</td></tr>
-        ${inv.customerPhone ? `<tr><td>&#1575;&#1604;&#1580;&#1608;&#1575;&#1604;</td><td class="l">${inv.customerPhone}</td></tr>` : ''}
+        <tr><td style="width:55%">&#1585;&#1602;&#1605; &#1575;&#1604;&#1601;&#1575;&#1578;&#1608;&#1585;&#1577; / Invoice #</td><td class="l">${inv.invoiceNumber}</td></tr>
+        <tr><td>&#1575;&#1604;&#1578;&#1575;&#1585;&#1610;&#1582; / Date</td><td class="l">${fmtDate(inv.createdAt)}</td></tr>
+        <tr><td>&#1575;&#1604;&#1593;&#1605;&#1610;&#1604; / Customer</td><td class="l">${inv.customerName}</td></tr>
+        ${inv.customerPhone ? `<tr><td>&#1575;&#1604;&#1580;&#1608;&#1575;&#1604; / Phone</td><td class="l">${inv.customerPhone}</td></tr>` : ''}
       </table>
       <hr>
       <table>
         <thead class="hdr"><tr>
-          <th>&#1575;&#1604;&#1605;&#1606;&#1578;&#1580;</th>
-          <th class="c" style="width:20px">&#1575;&#1604;&#1603;&#1605;&#1610;&#1577;</th>
+          <th>&#1575;&#1604;&#1605;&#1606;&#1578;&#1580; / Item</th>
+          <th class="c" style="width:20px">&#1603;&#1605;</th>
           <th class="l" style="width:52px">&#1575;&#1604;&#1587;&#1593;&#1585;</th>
           <th class="l" style="width:52px">&#1575;&#1604;&#1605;&#1576;&#1604;&#1594;</th>
         </tr></thead>
@@ -154,22 +169,22 @@ hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
       </table>
       <hr>
       <table>
-        <tr><td style="width:60%">&#1575;&#1604;&#1605;&#1580;&#1605;&#1608;&#1593; &#1575;&#1604;&#1601;&#1585;&#1593;&#1610;</td><td class="l">${fmtNum(inv.subtotal)} SR</td></tr>
-        ${discAmt > 0 ? `<tr style="color:red"><td>&#1575;&#1604;&#1582;&#1589;&#1605;</td><td class="l">- ${fmtNum(discAmt)} SR</td></tr>` : ''}
-        ${inv.vatAmount > 0 ? `<tr><td>&#1590;&#1585;&#1610;&#1576;&#1577; &#1575;&#1604;&#1602;&#1610;&#1605;&#1577; (${inv.vat}%)</td><td class="l">${fmtNum(inv.vatAmount)} SR</td></tr>` : ''}
-        <tr class="line"><td>&#1575;&#1604;&#1573;&#1580;&#1605;&#1575;&#1604;&#1610;</td><td class="l">${fmtNum(inv.total)} SR</td></tr>
+        <tr><td style="width:60%">&#1575;&#1604;&#1605;&#1580;&#1605;&#1608;&#1593; / Subtotal</td><td class="l">${fmtNum(inv.subtotal)} SR</td></tr>
+        ${discAmt > 0 ? `<tr style="color:red"><td>&#1575;&#1604;&#1582;&#1589;&#1605; / Discount</td><td class="l">- ${fmtNum(discAmt)} SR</td></tr>` : ''}
+        ${inv.vatAmount > 0 ? `<tr><td>&#1590;&#1585;&#1610;&#1576;&#1577; / VAT (${inv.vat}%)</td><td class="l">${fmtNum(inv.vatAmount)} SR</td></tr>` : ''}
+        <tr class="line"><td>&#1575;&#1604;&#1573;&#1580;&#1605;&#1575;&#1604;&#1610; / TOTAL</td><td class="l">${fmtNum(inv.total)} SR</td></tr>
       </table>
-      ${inv.notes ? `<hr><div style="font-size:7px">&#1605;&#1604;&#1575;&#1581;&#1592;&#1575;&#1578;: ${inv.notes}</div>` : ''}
+      ${inv.notes ? `<hr><div style="font-size:7px">&#1605;&#1604;&#1575;&#1581;&#1592;&#1575;&#1578; / Notes: ${inv.notes}</div>` : ''}
       ${qrRef.current ? `<div class="center" style="margin-top:5px"><img src="${qrRef.current}" style="width:48px;height:48px"><div style="font-size:6px;margin-top:1px">areejalaqhwan.com</div></div>` : ''}
+      ${socialLines.length > 0 ? `<hr><div class="center">${socialLines.join('')}</div>` : ''}
       <hr>
       <div class="center" style="font-size:8px">
-        <div>&#1588;&#1603;&#1585;&#1575;&#1611; &#1604;&#1578;&#1593;&#1575;&#1605;&#1604;&#1603;&#1605; &#1605;&#1593;&#1606;&#1575;</div>
-        <div style="font-size:7px;margin-top:1px">Thank you for your business!</div>
+        <div>&#1588;&#1603;&#1585;&#1575;&#1611; &#1604;&#1578;&#1593;&#1575;&#1605;&#1604;&#1603;&#1605; &#1605;&#1593;&#1606;&#1575; / Thank you!</div>
         <div style="font-size:7px;margin-top:1px">areejalaqhwan.com</div>
       </div>
     `;
 
-    w.document.write(`<html dir="rtl"><head><title>&#1601;&#1575;&#1578;&#1608;&#1585;&#1577;</title><style>${css}</style></head><body>${html}</body></html>`);
+    w.document.write(`<html dir="rtl"><head><meta charset="UTF-8"><title>\u0641\u0627\u062a\u0648\u0631\u0629</title><style>${css}</style></head><body>${html}</body></html>`);
     w.document.close();
     setTimeout(() => w.print(), 600);
   }, []);
