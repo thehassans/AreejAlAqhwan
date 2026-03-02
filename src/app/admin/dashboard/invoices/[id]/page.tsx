@@ -53,6 +53,10 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
   const [logoDataUrl, setLogoDataUrl] = useState<string>('');
   const [fontDataUrl, setFontDataUrl] = useState<string>('');
   const printRef = useRef<HTMLDivElement>(null);
+  const invoiceRef = useRef<InvoiceData | null>(null);
+  const settingsRef = useRef<SettingsData | null>(null);
+  const qrRef = useRef<string>('');
+  const logoRef = useRef<string>('');
 
   // Convert logo to data URL for PDF/print
   useEffect(() => {
@@ -64,7 +68,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
       const ctx = canvas.getContext('2d');
-      if (ctx) { ctx.drawImage(img, 0, 0); setLogoDataUrl(canvas.toDataURL('image/png')); }
+      if (ctx) { ctx.drawImage(img, 0, 0); const url = canvas.toDataURL('image/png'); setLogoDataUrl(url); logoRef.current = url; }
     };
     img.src = logoSrc;
   }, [settings]);
@@ -72,7 +76,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
   // Generate QR code client-side
   useEffect(() => {
     QRCode.toDataURL('https://areejalaqhwan.com', { width: 200, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
-      .then(setQrDataUrl).catch(console.error);
+      .then(url => { setQrDataUrl(url); qrRef.current = url; }).catch(console.error);
   }, []);
 
   // Load SAMA SAR font as data URL for print
@@ -89,25 +93,85 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
   }, []);
 
   const handlePrintFn = useCallback(() => {
-    const el = printRef.current;
-    if (!el) return;
+    const inv = invoiceRef.current;
+    const sett = settingsRef.current;
+    if (!inv) return;
     const w = window.open('', '_blank');
     if (!w) return;
-    const printStyles = `
-@font-face { font-family: "SaudiRiyalSymbol"; src: url("${fontDataUrl}") format("truetype"); }
+
+    const discAmt = inv.discountType === 'percentage'
+      ? (inv.subtotal * inv.discount) / 100
+      : inv.discount;
+
+    const css = `
 @page { size: 80mm auto; margin: 0; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: "Courier New", monospace; font-size: 9px; width: 72mm; margin: 0 auto; padding: 3mm; color: #000; direction: ltr; font-weight: bold; }
-.sar { font-family: "SaudiRiyalSymbol", sans-serif; font-weight: bold; font-size: 10px; }
-img { max-width: 100%; }
+body { font-family: 'Courier New', Courier, monospace; font-size: 9px; width: 72mm; margin: 0 auto; padding: 3mm 4mm; color: #000; font-weight: bold; }
+img { display: block; margin: 0 auto; }
 table { width: 100%; border-collapse: collapse; }
-th, td { font-size: 8px; padding: 2px 1px; font-weight: bold; }
-th { border-bottom: 2px solid #000; font-size: 9px; }
+td, th { font-size: 8px; font-weight: bold; padding: 2px 3px; vertical-align: top; }
+.hdr th { border-bottom: 2px solid #000; text-align: left; }
+.hdr th.r { text-align: right; }
+.info td.r { text-align: right; }
+.tot td.r { text-align: right; }
+.tot .line td { border-top: 2px solid #000; font-size: 10px; padding-top: 3px; }
+hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+.center { text-align: center; }
 `;
-    w.document.write(`<html dir="ltr"><head><title>Invoice</title><style>${printStyles}</style></head><body>${el.innerHTML}</body></html>`);
+
+    const itemRows = inv.items.map(it =>
+      `<tr>
+        <td>${it.name || it.nameAr || '-'}</td>
+        <td style="text-align:center;width:20px">${it.quantity}</td>
+        <td style="text-align:right;width:52px">${fmtNum(it.unitPrice)} SR</td>
+        <td style="text-align:right;width:52px">${fmtNum(it.total)} SR</td>
+      </tr>`
+    ).join('');
+
+    const html = `
+      <div class="center" style="margin-bottom:5px">
+        ${logoRef.current ? `<img src="${logoRef.current}" style="max-width:80px;max-height:32px;margin-bottom:3px">` : ''}
+        <div style="font-size:12px">Areej Al Aqhwan</div>
+        ${sett?.phone ? `<div style="font-size:8px">${sett.phone}</div>` : ''}
+        ${sett?.address ? `<div style="font-size:7px">${sett.address}</div>` : ''}
+      </div>
+      <hr>
+      <table class="info">
+        <tr><td style="width:55%">Invoice #</td><td class="r">${inv.invoiceNumber}</td></tr>
+        <tr><td>Date</td><td class="r">${fmtDate(inv.createdAt)}</td></tr>
+        <tr><td>Customer</td><td class="r">${inv.customerName}</td></tr>
+        ${inv.customerPhone ? `<tr><td>Phone</td><td class="r">${inv.customerPhone}</td></tr>` : ''}
+      </table>
+      <hr>
+      <table>
+        <thead class="hdr"><tr>
+          <th>Item</th>
+          <th style="text-align:center;width:20px">Qty</th>
+          <th class="r" style="width:52px">Price</th>
+          <th class="r" style="width:52px">Total</th>
+        </tr></thead>
+        <tbody>${itemRows}</tbody>
+      </table>
+      <hr>
+      <table class="tot">
+        <tr><td style="width:60%">Subtotal</td><td class="r">${fmtNum(inv.subtotal)} SR</td></tr>
+        ${discAmt > 0 ? `<tr style="color:red"><td>Discount</td><td class="r">- ${fmtNum(discAmt)} SR</td></tr>` : ''}
+        ${inv.vatAmount > 0 ? `<tr><td>VAT (${inv.vat}%)</td><td class="r">${fmtNum(inv.vatAmount)} SR</td></tr>` : ''}
+        <tr class="line"><td>TOTAL</td><td class="r">${fmtNum(inv.total)} SR</td></tr>
+      </table>
+      ${inv.notes ? `<hr><div style="font-size:7px">Notes: ${inv.notes}</div>` : ''}
+      ${qrRef.current ? `<div class="center" style="margin-top:5px"><img src="${qrRef.current}" style="width:48px;height:48px"><div style="font-size:6px;margin-top:1px">areejalaqhwan.com</div></div>` : ''}
+      <hr>
+      <div class="center" style="font-size:8px">
+        <div>Thank you for your business!</div>
+        <div style="font-size:7px;margin-top:1px">areejalaqhwan.com</div>
+      </div>
+    `;
+
+    w.document.write(`<html><head><title>Invoice</title><style>${css}</style></head><body>${html}</body></html>`);
     w.document.close();
-    setTimeout(() => w.print(), 500);
-  }, [fontDataUrl]);
+    setTimeout(() => w.print(), 600);
+  }, []);
 
   // Compute WhatsApp URL as derived value so it can be used directly in an <a> href
   const whatsappUrl = useMemo(() => {
@@ -175,6 +239,8 @@ th { border-bottom: 2px solid #000; font-size: 9px; }
     ]).then(([inv, sett]) => {
       setInvoice(inv);
       setSettings(sett);
+      invoiceRef.current = inv;
+      settingsRef.current = sett;
       setLoading(false);
       if (searchParams.get('print') === 'true') {
         setTimeout(() => handlePrintFn(), 800);
