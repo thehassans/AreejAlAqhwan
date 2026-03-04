@@ -43,7 +43,7 @@ export default function HomePage() {
             {locale === 'ar' ? 'مرحباً بكم' : 'Welcome'}
           </span>
           <h1 className="text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold mb-5 drop-shadow-lg leading-tight">
-            {locale === 'ar' ? 'أريج الأقحوان' : 'Areej Al Aqhwan'}
+            {locale === 'ar' ? 'أريج الأخوان' : 'Areej Al Akhwan'}
           </h1>
           <p className="text-base sm:text-xl lg:text-2xl max-w-3xl mb-10 opacity-90 drop-shadow font-light">
             {locale === 'ar' ? 'زهور وهدايا فاخرة لكل مناسبة' : 'Premium flowers & gifts for every occasion'}
