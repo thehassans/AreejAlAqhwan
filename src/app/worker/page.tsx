@@ -50,7 +50,7 @@ export default function WorkerLoginPage() {
               <Image src="/logo.png" alt="Logo" width={80} height={80} className="object-cover w-full h-full" unoptimized />
             </div>
             <h1 className="text-xl font-bold text-gray-800">لوحة الموظف</h1>
-            <p className="text-sm text-gray-400 mt-1">أريج الأخوان</p>
+            <p className="text-sm text-gray-400 mt-1">أريج الأقحوان</p>
           </div>
 
           {/* Form */}
@@ -110,7 +110,7 @@ export default function WorkerLoginPage() {
           </form>
 
           <p className="text-center text-xs text-gray-400 mt-6">
-            لوحة تحكم الموظفين — أريج الأخوان 🌸
+            لوحة تحكم الموظفين — أريج الأقحوان 🌸
           </p>
         </div>
 

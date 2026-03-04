@@ -7,7 +7,7 @@ export const translations = {
       admin: 'لوحة التحكم',
     },
     home: {
-      hero: 'أريج الأخوان',
+      hero: 'أريج الأقحوان',
       heroSub: 'متجر الزهور والهدايا الفاخرة',
       shopNow: 'تسوق الآن',
       featured: 'منتجات مميزة',
@@ -64,7 +64,7 @@ export const translations = {
       backHome: 'العودة للرئيسية',
     },
     footer: {
-      brand: 'أريج الأخوان',
+      brand: 'أريج الأقحوان',
       brandDesc: 'متجر الزهور والهدايا الفاخرة في المملكة العربية السعودية',
       quickLinks: 'روابط سريعة',
       contact: 'تواصل معنا',

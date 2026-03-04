@@ -74,7 +74,7 @@ export default function WorkerDashboardLayout({ children }: { children: React.Re
               <Image src="/logo.png" alt="Logo" fill className="object-cover" unoptimized />
             </div>
             <div>
-              <span className="text-sm font-bold text-[#5B7B6D] block">أريج الأخوان</span>
+              <span className="text-sm font-bold text-[#5B7B6D] block">أريج الأقحوان</span>
               <span className="text-xs text-gray-400">لوحة الموظف</span>
             </div>
           </Link>
@@ -150,7 +150,7 @@ export default function WorkerDashboardLayout({ children }: { children: React.Re
             <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 relative">
               <Image src="/logo.png" alt="Logo" fill className="object-cover" unoptimized />
             </div>
-            <h1 className="text-base font-bold text-[#5B7B6D]">أريج الأخوان</h1>
+            <h1 className="text-base font-bold text-[#5B7B6D]">أريج الأقحوان</h1>
           </div>
           {worker && (
             <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg truncate max-w-[100px]">

@@ -64,7 +64,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 relative ring-2 ring-[#5B7B6D]/20">
               <Image src="/logo.png" alt="Logo" fill className="object-cover" unoptimized />
             </div>
-            <span className="text-base font-bold text-[#5B7B6D]">أريج الأخوان</span>
+            <span className="text-base font-bold text-[#5B7B6D]">أريج الأقحوان</span>
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1" aria-label="Close sidebar">
             <FiX size={20} />
@@ -99,7 +99,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 relative">
               <Image src="/logo.png" alt="Logo" fill className="object-cover" unoptimized />
             </div>
-            <h1 className="text-lg font-bold text-[#5B7B6D]">أريج الأخوان</h1>
+            <h1 className="text-lg font-bold text-[#5B7B6D]">أريج الأقحوان</h1>
           </div>
         </header>
         <main className="flex-1 p-4 lg:p-6 overflow-auto">
