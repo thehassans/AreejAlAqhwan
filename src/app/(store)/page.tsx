@@ -32,17 +32,17 @@ export default function HomePage() {
   return (
     <div className="bg-[#FAFAF8]">
       {/* Hero Banner Video */}
-      <section className="relative h-[85vh] lg:h-screen overflow-hidden">
-        <video autoPlay muted loop playsInline preload="none" className="absolute inset-0 w-full h-full object-cover object-center">
+      <section className="relative h-[82vh] sm:h-[86vh] lg:h-[88vh] xl:h-[92vh] overflow-hidden">
+        <video autoPlay muted loop playsInline preload="none" className="absolute inset-0 w-full h-full object-cover object-center lg:object-[center_28%]">
           <source src="/banner.webm" type="video/webm" />
           <source src="/banner.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/70" />
-        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-6 pt-16 lg:pt-20">
+        <div className="relative z-10 mx-auto flex h-full w-full max-w-6xl flex-col items-center justify-center px-6 pt-16 text-center text-white lg:pt-16">
           <span className="inline-block px-4 py-1.5 bg-white/15 backdrop-blur-sm border border-white/30 rounded-full text-xs sm:text-sm font-medium mb-5 tracking-widest uppercase">
             {locale === 'ar' ? 'مرحباً بكم' : 'Welcome'}
           </span>
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold mb-5 drop-shadow-lg leading-tight">
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl xl:text-[5.25rem] font-bold mb-5 drop-shadow-lg leading-tight">
             {locale === 'ar' ? 'أريج الأخوان' : 'Areej Al Akhwan'}
           </h1>
           <p className="text-base sm:text-xl lg:text-2xl max-w-3xl mb-10 opacity-90 drop-shadow font-light">
