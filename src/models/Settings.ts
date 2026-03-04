@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const SettingsSchema = new mongoose.Schema({
-  storeName: { type: String, default: 'أريج الأخوان' },
+  storeName: { type: String, default: 'أريج الأقحوان' },
   storeNameEn: { type: String, default: 'Areej Al Aqhwan' },
   storeDescription: { type: String, default: 'متجر الزهور والهدايا الفاخرة' },
   storeDescriptionEn: { type: String, default: 'Premium Flower and Gift Shop' },

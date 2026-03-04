@@ -41,7 +41,7 @@ export default function Navbar() {
               <Image src="/logo.png" alt="Logo" fill className="object-cover" unoptimized />
             </div>
             <span className={`text-lg font-bold tracking-tight transition-colors duration-300 ${isHome && !scrolled ? 'text-white' : 'text-[#5B7B6D]'}`}>
-              أريج الأخوان
+              أريج الأقحوان
             </span>
           </Link>
 
