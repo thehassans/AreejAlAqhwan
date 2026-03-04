@@ -3,7 +3,7 @@ import { generateDailyQRValue } from '@/lib/qrAttendance';
 
 export async function GET() {
   try {
-    const today = new Date().toLocaleDateString('en-CA');
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Riyadh' }).format(new Date());
     const qrValue = generateDailyQRValue(today);
     return NextResponse.json({ qrValue, date: today });
   } catch (error) {

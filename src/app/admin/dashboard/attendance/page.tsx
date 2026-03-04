@@ -11,7 +11,7 @@ interface AttendanceRecord {
   workerId: string;
   date: string;
   checkInTime: string;
-  method: 'qr' | 'manual';
+  method: 'qr';
   createdAt: string;
 }
 
@@ -51,7 +51,7 @@ export default function AttendancePage() {
   const scannedRef = useRef(false);
 
   const todayFormatted = new Date().toLocaleDateString('ar-SA', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Riyadh',
   });
 
   // Fetch auth user on mount
@@ -212,7 +212,6 @@ export default function AttendancePage() {
 
   const todayCount = records.filter(r => r.date === today).length;
   const qrCount = records.filter(r => r.method === 'qr').length;
-  const manualCount = records.filter(r => r.method === 'manual').length;
 
   const fmtDate = (d: string) => {
     const parts = d.split('-');
@@ -256,7 +255,8 @@ export default function AttendancePage() {
                 <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center">
                   <FiCheckCircle size={40} className="text-emerald-500" />
                 </div>
-                <p className="text-xl font-bold text-gray-800">تم تسجيل حضورك اليوم ✓</p>
+                <p className="text-xl font-bold text-gray-800">أريج الأقحوان ✅</p>
+                <p className="text-sm text-emerald-600 font-semibold">تم تسجيل حضورك اليوم</p>
                 <p className="text-sm text-gray-500">
                   وقت الحضور: <span dir="ltr" className="font-semibold">{records.find(r => r.workerId === authUser?.id && r.date === today)?.checkInTime}</span>
                 </p>
@@ -308,8 +308,8 @@ export default function AttendancePage() {
                 <FiCalendar size={20} className="text-amber-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-800">{manualCount}</p>
-                <p className="text-xs text-gray-500">يدوي</p>
+                <p className="text-2xl font-bold text-gray-800">{workers.length}</p>
+                <p className="text-xs text-gray-500">إجمالي الموظفين</p>
               </div>
             </div>
           </div>
@@ -445,8 +445,8 @@ export default function AttendancePage() {
                           </div>
                         </td>
                         <td className="px-5 py-4">
-                          <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-semibold ${record.method === 'qr' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'}`}>
-                            {record.method === 'qr' ? <><FiSmartphone size={11} /> QR</> : <><FiCheckCircle size={11} /> يدوي</>}
+                          <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-semibold bg-blue-50 text-blue-600">
+                            <FiSmartphone size={11} /> QR
                           </span>
                         </td>
                       </tr>
@@ -480,8 +480,8 @@ export default function AttendancePage() {
                   <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center animate-bounce">
                     <FiCheckCircle size={48} className="text-emerald-500" />
                   </div>
-                  <p className="text-xl font-bold text-gray-800">تم تسجيل حضورك!</p>
-                  <p className="text-sm text-gray-500 text-center">تم تسجيل حضورك بنجاح ✓</p>
+                  <p className="text-xl font-bold text-gray-800">أريج الأقحوان ✅</p>
+                  <p className="text-sm text-emerald-600 font-semibold text-center">تم تسجيل حضورك بنجاح</p>
                 </div>
               ) : scanError ? (
                 <div className="flex flex-col items-center gap-4 py-4 w-full">

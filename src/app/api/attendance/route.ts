@@ -26,24 +26,18 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     await dbConnect();
-    const { workerId, qrValue, method } = await req.json();
+    const { workerId, qrValue } = await req.json();
 
     const worker = await Worker.findById(workerId);
     if (!worker) {
       return NextResponse.json({ error: 'الموظف غير موجود' }, { status: 404 });
     }
 
-    let attendanceDate: string;
-
-    if (method === 'qr') {
-      const validation = validateQRCode(qrValue);
-      if (!validation.valid) {
-        return NextResponse.json({ error: validation.message }, { status: 400 });
-      }
-      attendanceDate = validation.date;
-    } else {
-      attendanceDate = new Date().toLocaleDateString('en-CA');
+    const validation = validateQRCode(qrValue);
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.message }, { status: 400 });
     }
+    const attendanceDate = validation.date;
 
     const existing = await Attendance.findOne({ workerId, date: attendanceDate });
     if (existing) {
@@ -51,14 +45,19 @@ export async function POST(req: NextRequest) {
     }
 
     const now = new Date();
-    const checkInTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const checkInTime = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Riyadh',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }).format(now);
 
     const record = await Attendance.create({
       workerId: worker._id,
       workerName: worker.name,
       date: attendanceDate,
       checkInTime,
-      method: method || 'qr',
+      method: 'qr',
     });
 
     return NextResponse.json(record, { status: 201 });

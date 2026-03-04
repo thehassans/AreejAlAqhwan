@@ -5,7 +5,7 @@ const AttendanceSchema = new mongoose.Schema({
   workerName: { type: String, required: true },
   date: { type: String, required: true },
   checkInTime: { type: String, required: true },
-  method: { type: String, enum: ['qr', 'manual'], default: 'qr' },
+  method: { type: String, enum: ['qr'], default: 'qr' },
 }, { timestamps: true });
 
 export default mongoose.models.Attendance || mongoose.model('Attendance', AttendanceSchema);

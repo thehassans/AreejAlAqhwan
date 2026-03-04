@@ -25,7 +25,7 @@ export function validateQRCode(qrValue: string): { valid: boolean; date: string;
   if (providedDigest !== expectedDigest) {
     return { valid: false, date, message: 'رمز QR غير صحيح' };
   }
-  const today = new Date().toLocaleDateString('en-CA');
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Riyadh' }).format(new Date());
   if (date !== today) {
     return { valid: false, date, message: 'رمز QR منتهي الصلاحية، يرجى مسح الرمز اليومي الحالي' };
   }
