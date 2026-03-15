@@ -98,96 +98,96 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
       .catch(console.error);
   }, []);
 
-  const handlePrintFn = useCallback(() => {
-    const inv = invoiceRef.current;
-    const sett = settingsRef.current;
-    if (!inv) return;
-    const w = window.open('', '_blank');
-    if (!w) return;
+  const renderReceiptCanvas = useCallback(async (scale = 4) => {
+    const el = printRef.current;
+    if (!el) return null;
+    const html2canvas = (await import('html2canvas')).default;
+    if (document.fonts?.ready) {
+      await document.fonts.ready;
+    }
+    const clone = el.cloneNode(true) as HTMLDivElement;
 
-    const discAmt = inv.discountType === 'percentage'
-      ? (inv.subtotal * inv.discount) / 100
-      : inv.discount;
+    clone.style.position = 'fixed';
+    clone.style.left = '-10000px';
+    clone.style.top = '0';
+    clone.style.margin = '0';
+    clone.style.maxWidth = '302px';
+    clone.style.width = '302px';
+    clone.style.border = 'none';
+    clone.style.borderRadius = '0';
+    clone.style.boxShadow = 'none';
+    clone.style.background = '#ffffff';
+    clone.style.overflow = 'visible';
 
-    const css = `
-@page { size: 80mm auto; margin: 0; }
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Courier New', Courier, monospace; font-size: 9px; width: 72mm; margin: 0 auto; padding: 3mm 4mm; color: #000; font-weight: bold; direction: rtl; }
-img { display: block; margin: 0 auto; }
-table { width: 100%; border-collapse: collapse; }
-td, th { font-size: 8px; font-weight: bold; padding: 2px 3px; vertical-align: top; }
-.hdr th { border-bottom: 2px solid #000; }
-.l { text-align: left; }
-.c { text-align: center; }
-.line td { border-top: 2px solid #000; font-size: 10px; padding-top: 3px; }
-hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
-.center { text-align: center; }
-.sm { font-size: 7px; margin: 1px 0; }
-`;
+    document.body.appendChild(clone);
 
-    const socialLines: string[] = [];
-    if (sett?.instagramEnabled && sett.instagram) socialLines.push(`<div class="sm">&#x1F4F8; Instagram: @${sett.instagram}</div>`);
-    if (sett?.snapchatEnabled && sett.snapchat) socialLines.push(`<div class="sm">&#x1F47B; Snapchat: @${sett.snapchat}</div>`);
-    if (sett?.tiktokEnabled && sett.tiktok) socialLines.push(`<div class="sm">&#x1F3B5; TikTok: @${sett.tiktok}</div>`);
-    if (sett?.twitterEnabled && sett.twitter) socialLines.push(`<div class="sm">&#x1F426; X/Twitter: @${sett.twitter}</div>`);
-    if (sett?.facebookEnabled && sett.facebook) socialLines.push(`<div class="sm">&#x1F4CC; Facebook: ${sett.facebook}</div>`);
-    if (sett?.pinterestEnabled && sett.pinterest) socialLines.push(`<div class="sm">&#x1F4CC; Pinterest: ${sett.pinterest}</div>`);
-
-    const itemRows = inv.items.map(it =>
-      `<tr>
-        <td>${it.nameAr || it.name || '-'}<br><span style="font-size:7px;font-weight:normal">${it.name && it.nameAr ? it.name : ''}</span></td>
-        <td class="c" style="width:20px">${it.quantity}</td>
-        <td class="l" style="width:52px">${fmtNum(it.unitPrice)} SR</td>
-        <td class="l" style="width:52px">${fmtNum(it.total)} SR</td>
-      </tr>`
-    ).join('');
-
-    const html = `
-      <div class="center" style="margin-bottom:5px">
-        ${logoRef.current ? `<img src="${logoRef.current}" style="max-width:80px;max-height:32px;margin-bottom:3px">` : ''}
-        <div style="font-size:12px">Areej Al Aqhwan</div>
-        <div style="font-size:10px">&#1571;&#1585;&#1610;&#1580; &#1575;&#1604;&#1571;&#1602;&#1581;&#1608;&#1575;&#1606;</div>
-        ${sett?.phone ? `<div style="font-size:8px">${sett.phone}</div>` : ''}
-        ${sett?.address ? `<div style="font-size:7px">${sett.address}</div>` : ''}
-      </div>
-      <hr>
-      <table>
-        <tr><td style="width:55%">&#1585;&#1602;&#1605; &#1575;&#1604;&#1601;&#1575;&#1578;&#1608;&#1585;&#1577; / Invoice #</td><td class="l">${inv.invoiceNumber}</td></tr>
-        <tr><td>&#1575;&#1604;&#1578;&#1575;&#1585;&#1610;&#1582; / Date</td><td class="l">${fmtDate(inv.createdAt)}</td></tr>
-        <tr><td>&#1575;&#1604;&#1593;&#1605;&#1610;&#1604; / Customer</td><td class="l">${inv.customerName}</td></tr>
-        ${inv.customerPhone ? `<tr><td>&#1575;&#1604;&#1580;&#1608;&#1575;&#1604; / Phone</td><td class="l">${inv.customerPhone}</td></tr>` : ''}
-      </table>
-      <hr>
-      <table>
-        <thead class="hdr"><tr>
-          <th>&#1575;&#1604;&#1605;&#1606;&#1578;&#1580; / Item</th>
-          <th class="c" style="width:20px">&#1603;&#1605;</th>
-          <th class="l" style="width:52px">&#1575;&#1604;&#1587;&#1593;&#1585;</th>
-          <th class="l" style="width:52px">&#1575;&#1604;&#1605;&#1576;&#1604;&#1594;</th>
-        </tr></thead>
-        <tbody>${itemRows}</tbody>
-      </table>
-      <hr>
-      <table>
-        <tr><td style="width:60%">&#1575;&#1604;&#1605;&#1580;&#1605;&#1608;&#1593; / Subtotal</td><td class="l">${fmtNum(inv.subtotal)} SR</td></tr>
-        ${discAmt > 0 ? `<tr style="color:red"><td>&#1575;&#1604;&#1582;&#1589;&#1605; / Discount</td><td class="l">- ${fmtNum(discAmt)} SR</td></tr>` : ''}
-        ${inv.vatAmount > 0 ? `<tr><td>&#1590;&#1585;&#1610;&#1576;&#1577; / VAT (${inv.vat}%)</td><td class="l">${fmtNum(inv.vatAmount)} SR</td></tr>` : ''}
-        <tr class="line"><td>&#1575;&#1604;&#1573;&#1580;&#1605;&#1575;&#1604;&#1610; / TOTAL</td><td class="l">${fmtNum(inv.total)} SR</td></tr>
-      </table>
-      ${inv.notes ? `<hr><div style="font-size:7px">&#1605;&#1604;&#1575;&#1581;&#1592;&#1575;&#1578; / Notes: ${inv.notes}</div>` : ''}
-      ${qrRef.current ? `<div class="center" style="margin-top:5px"><img src="${qrRef.current}" style="width:48px;height:48px"><div style="font-size:6px;margin-top:1px">areejalaqhwan.com</div></div>` : ''}
-      ${socialLines.length > 0 ? `<hr><div class="center">${socialLines.join('')}</div>` : ''}
-      <hr>
-      <div class="center" style="font-size:8px">
-        <div>&#1588;&#1603;&#1585;&#1575;&#1611; &#1604;&#1578;&#1593;&#1575;&#1605;&#1604;&#1603;&#1605; &#1605;&#1593;&#1606;&#1575; / Thank you!</div>
-        <div style="font-size:7px;margin-top:1px">areejalaqhwan.com</div>
-      </div>
-    `;
-
-    w.document.write(`<html dir="rtl"><head><meta charset="UTF-8"><title>\u0641\u0627\u062a\u0648\u0631\u0629</title><style>${css}</style></head><body>${html}</body></html>`);
-    w.document.close();
-    setTimeout(() => w.print(), 600);
+    try {
+      return await html2canvas(clone, {
+        scale,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      });
+    } finally {
+      document.body.removeChild(clone);
+    }
   }, []);
+
+  const handlePrintFn = useCallback(async () => {
+    const inv = invoiceRef.current;
+    if (!inv) return;
+
+    try {
+      toast.loading('جاري تجهيز الطباعة الحرارية...', { id: 'thermal-print' });
+      const canvas = await renderReceiptCanvas(4);
+      if (!canvas) {
+        toast.error('تعذر تجهيز الفاتورة للطباعة', { id: 'thermal-print' });
+        return;
+      }
+
+      const imgData = canvas.toDataURL('image/png');
+      const printableWidthMm = 72;
+      const printableHeightMm = (canvas.height / canvas.width) * printableWidthMm;
+      const w = window.open('', '_blank');
+
+      if (!w) {
+        toast.error('تعذر فتح نافذة الطباعة', { id: 'thermal-print' });
+        return;
+      }
+
+      w.document.write(`
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>فاتورة</title>
+            <style>
+              @page { size: 80mm auto; margin: 0; }
+              html, body { margin: 0; padding: 0; width: 80mm; background: #ffffff; }
+              body { display: flex; justify-content: center; align-items: flex-start; }
+              img { display: block; width: ${printableWidthMm}mm; height: ${printableHeightMm}mm; image-rendering: crisp-edges; image-rendering: -webkit-optimize-contrast; }
+            </style>
+          </head>
+          <body>
+            <img src="${imgData}" alt="Invoice receipt" />
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                }, 250);
+              };
+              window.onafterprint = function() {
+                window.close();
+              };
+            </script>
+          </body>
+        </html>
+      `);
+      w.document.close();
+      toast.success('تم تجهيز الطباعة الحرارية', { id: 'thermal-print' });
+    } catch (err) {
+      console.error('Thermal print error:', err);
+      toast.error('فشل تجهيز الطباعة الحرارية', { id: 'thermal-print' });
+    }
+  }, [renderReceiptCanvas]);
 
   // Compute WhatsApp URL as derived value so it can be used directly in an <a> href
   const whatsappUrl = useMemo(() => {
@@ -231,11 +231,9 @@ hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
     if (!invoice) return;
     try {
       toast.loading('جاري إنشاء PDF...', { id: 'pdf-dl' });
-      const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
-      const el = printRef.current;
-      if (!el) return;
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      const canvas = await renderReceiptCanvas(4);
+      if (!canvas) return;
       const pdfWidth = 80;
       const pdfHeight = (canvas.height / canvas.width) * pdfWidth;
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [pdfWidth, Math.max(70, pdfHeight)] });
