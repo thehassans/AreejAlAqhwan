@@ -65,6 +65,8 @@ export default function CreateInvoicePage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [items, setItems] = useState<InvoiceItem[]>([{ name: '', nameAr: '', quantity: 1, unitPrice: 0, total: 0 }]);
+  const [discount, setDiscount] = useState(0);
+  const [discountType, setDiscountType] = useState<'fixed' | 'percentage'>('fixed');
   const [notes, setNotes] = useState('');
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [saving, setSaving] = useState(false);
@@ -140,8 +142,13 @@ export default function CreateInvoicePage() {
   };
 
   const subtotal = items.reduce((sum, i) => sum + i.total, 0);
-  const vatAmount = settings?.vatEnabled ? (subtotal * (settings.vatPercentage || 15)) / 100 : 0;
-  const total = subtotal + vatAmount;
+  const rawDiscountAmount = discountType === 'percentage'
+    ? (subtotal * discount) / 100
+    : discount;
+  const discountAmount = Math.min(subtotal, Math.max(0, rawDiscountAmount));
+  const discountedSubtotal = Math.max(0, subtotal - discountAmount);
+  const vatAmount = settings?.vatEnabled ? (discountedSubtotal * (settings.vatPercentage || 15)) / 100 : 0;
+  const total = discountedSubtotal + vatAmount;
 
   const handleSave = async (andPrint = false) => {
     if (!customerName.trim()) { toast.error('يرجى إدخال اسم العميل'); return; }
@@ -154,7 +161,7 @@ export default function CreateInvoicePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           invoiceNumber, customerName, customerPhone, customerEmail,
-          items, subtotal, discount: 0, discountType: 'fixed',
+          items, subtotal, discount, discountType,
           vat: settings?.vatPercentage || 0, vatAmount, total, notes,
         }),
       });
@@ -347,8 +354,39 @@ export default function CreateInvoicePage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
           </div>
           <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">نوع الخصم</label>
+                <select
+                  value={discountType}
+                  onChange={(e) => setDiscountType(e.target.value as 'fixed' | 'percentage')}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm"
+                  title="نوع الخصم"
+                >
+                  <option value="fixed">مبلغ ثابت (ر.س)</option>
+                  <option value="percentage">نسبة مئوية (%)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">قيمة الخصم</label>
+                <input
+                  type="number"
+                  min="0"
+                  max={discountType === 'percentage' ? 100 : undefined}
+                  step="0.01"
+                  value={discount === 0 ? '' : discount}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    setDiscount(isNaN(value) ? 0 : Math.max(0, value));
+                  }}
+                  placeholder={discountType === 'percentage' ? '0 - 100' : '0.00'}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm"
+                />
+              </div>
+            </div>
             <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
               <div className="flex justify-between"><span>المجموع الفرعي</span><span className="flex items-center gap-1">{subtotal.toFixed(2)} <SarIcon size={13} /></span></div>
+              {discountAmount > 0 && <div className="flex justify-between text-red-600"><span>الخصم</span><span className="flex items-center gap-1">-{discountAmount.toFixed(2)} <SarIcon size={13} /></span></div>}
               {settings?.vatEnabled && <div className="flex justify-between"><span>ضريبة ({settings.vatPercentage}%)</span><span className="flex items-center gap-1">{vatAmount.toFixed(2)} <SarIcon size={13} /></span></div>}
               <div className="flex justify-between font-bold text-lg border-t pt-2"><span>الإجمالي</span><span className="flex items-center gap-1">{total.toFixed(2)} <SarIcon size={16} /></span></div>
             </div>
