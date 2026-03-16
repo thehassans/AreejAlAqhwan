@@ -29,6 +29,7 @@ const SettingsSchema = new mongoose.Schema({
   defaultLanguage: { type: String, enum: ['ar', 'en'], default: 'ar' },
   invoicePrefix: { type: String, default: 'INV' },
   invoiceNextNumber: { type: Number, default: 1 },
+  invoiceWhatsappMessage: { type: String, default: '' },
 }, { timestamps: true });
 
 export default mongoose.models.Settings || mongoose.model('Settings', SettingsSchema);

@@ -7,6 +7,7 @@ import { FaWhatsapp } from 'react-icons/fa6';
 import Link from 'next/link';
 import QRCode from 'qrcode';
 import toast from 'react-hot-toast';
+import { buildInvoiceWhatsAppMessage } from '@/lib/invoiceWhatsApp';
 
 interface InvoiceData {
   _id: string;
@@ -27,11 +28,13 @@ interface InvoiceData {
 
 interface SettingsData {
   storeName: string;
+  storeNameEn: string;
   phone: string;
   address: string;
   vatEnabled: boolean;
   vatPercentage: number;
   logo: string;
+  invoiceWhatsappMessage: string;
   instagram: string; instagramEnabled: boolean;
   facebook: string; facebookEnabled: boolean;
   twitter: string; twitterEnabled: boolean;
@@ -192,39 +195,14 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
   // Compute WhatsApp URL as derived value so it can be used directly in an <a> href
   const whatsappUrl = useMemo(() => {
     if (!invoice) return '#';
-    const waMessage = [
-      `Dear ${invoice.customerName},`,
-      ``,
-      `Thank you for your trust and for choosing "Areej Al-Aqahwan" to be a part of your story. Every flower in our store has been lovingly selected, and every gift carefully packaged to bring joy to you and your loved ones. We hope this arrangement fills your day with beauty and fragrance.`,
-      ``,
-      `With love,`,
-      `The Areej Al-Aqahwan Team 🌷`,
-      ``,
-      `────────────────`,
-      ``,
-      `عزيزي/عزيزتي ${invoice.customerName}،`,
-      ``,
-      `نشكركم على ثقتكم واختياركم "أريج الأقهوان" لتكون جزءًا من قصتكم. كل زهرة في متجرنا مختارة بعناية، وكل هدية مُغلفة بحرص لتُضفي البهجة على يومكم ويوم أحبائكم. نتمنى أن تُملأ هذه الباقة يومكم بالجمال والعبير.`,
-      ``,
-      `مع خالص الحب،`,
-      `فريق أريج الأقهوان 🌷`,
-      ``,
-      `────────────────`,
-      `فاتورة رقم: ${invoice.invoiceNumber}`,
-      `التاريخ: ${fmtDate(invoice.createdAt)}`,
-      ``,
-      ...invoice.items.map((item, i) => `${i+1}. ${item.nameAr || item.name} × ${item.quantity} = ${fmtNum(item.total)} ر.س`),
-      ``,
-      invoice.vatAmount > 0 ? `ضريبة (${invoice.vat}%): ${fmtNum(invoice.vatAmount)} ر.س` : null,
-      `الإجمالي: ${fmtNum(invoice.total)} ر.س`,
-    ].filter(Boolean).join('\n');
+    const waMessage = buildInvoiceWhatsAppMessage(invoice, settings || undefined);
 
     let phone = invoice.customerPhone?.replace(/[^0-9]/g, '') || '';
     if (phone.startsWith('0')) phone = '966' + phone.slice(1);
     return phone
       ? `https://wa.me/${phone}?text=${encodeURIComponent(waMessage)}`
       : `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
-  }, [invoice]);
+  }, [invoice, settings]);
 
   // Download PDF only
   const handleDownloadPDF = async () => {

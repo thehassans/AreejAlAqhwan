@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { FiPlus, FiEye, FiPrinter, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiEye, FiPrinter } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa6';
 import { formatCurrency, formatDateShort } from '@/lib/utils';
 import SarIcon from '@/components/SarIcon';
-import toast from 'react-hot-toast';
+import { buildInvoiceWhatsAppMessage } from '@/lib/invoiceWhatsApp';
 
 interface Invoice {
   _id: string;
@@ -14,51 +14,40 @@ interface Invoice {
   customerName: string;
   customerPhone: string;
   total: number;
+  subtotal: number;
+  discount: number;
+  discountType: string;
+  vat: number;
+  vatAmount: number;
+  items: Array<{ name: string; nameAr: string; quantity: number; total: number }>;
   status: string;
   createdAt: string;
 }
 
+interface SettingsData {
+  storeName: string;
+  storeNameEn: string;
+  invoiceWhatsappMessage: string;
+}
+
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [settings, setSettings] = useState<SettingsData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/invoices').then((r) => r.json()).then((data) => { setInvoices(data); setLoading(false); }).catch(() => setLoading(false));
+    Promise.all([
+      fetch('/api/invoices').then((r) => r.json()),
+      fetch('/api/settings').then((r) => r.json()),
+    ]).then(([invoiceData, settingsData]) => {
+      setInvoices(Array.isArray(invoiceData) ? invoiceData : []);
+      setSettings(settingsData);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذه الفاتورة؟')) return;
-    const res = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      setInvoices(invoices.filter((i) => i._id !== id));
-      toast.success('تم حذف الفاتورة');
-    } else {
-      toast.error('فشل حذف الفاتورة');
-    }
-  };
-
   const getWhatsAppUrl = (inv: Invoice) => {
-    const msg = [
-      `Dear ${inv.customerName},`,
-      ``,
-      `Thank you for your trust and for choosing "Areej Al-Aqahwan" to be a part of your story. Every flower in our store has been lovingly selected, and every gift carefully packaged to bring joy to you and your loved ones. We hope this arrangement fills your day with beauty and fragrance.`,
-      ``,
-      `With love,`,
-      `The Areej Al-Aqahwan Team 🌷`,
-      ``,
-      `────────────────`,
-      ``,
-      `عزيزي/عزيزتي ${inv.customerName}،`,
-      ``,
-      `نشكركم على ثقتكم واختياركم "أريج الأقهوان" لتكون جزءًا من قصتكم. كل زهرة في متجرنا مختارة بعناية، وكل هدية مُغلفة بحرص لتُضفي البهجة على يومكم ويوم أحبائكم. نتمنى أن تُملأ هذه الباقة يومكم بالجمال والعبير.`,
-      ``,
-      `مع خالص الحب،`,
-      `فريق أريج الأقهوان 🌷`,
-      ``,
-      `────────────────`,
-      `فاتورة رقم: ${inv.invoiceNumber}`,
-      `الإجمالي: ${inv.total} ر.س`,
-    ].join('\n');
+    const msg = buildInvoiceWhatsAppMessage(inv, settings || undefined);
     let phone = (inv.customerPhone || '').replace(/[^0-9]/g, '');
     if (phone.startsWith('0')) phone = '966' + phone.slice(1);
     return phone
@@ -106,7 +95,6 @@ export default function InvoicesPage() {
                         <Link href={`/admin/dashboard/invoices/${inv._id}`} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title="عرض"><FiEye size={16} /></Link>
                         <Link href={`/admin/dashboard/invoices/${inv._id}?print=true`} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg" title="طباعة"><FiPrinter size={16} /></Link>
                         <a href={getWhatsAppUrl(inv)} target="_blank" rel="noopener noreferrer" className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg" title="واتساب"><FaWhatsapp size={16} /></a>
-                        <button onClick={() => handleDelete(inv._id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg" title="حذف"><FiTrash2 size={16} /></button>
                       </div>
                     </td>
                   </tr>

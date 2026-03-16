@@ -12,6 +12,7 @@ interface Settings {
   vatEnabled: boolean; vatPercentage: number; currency: string; defaultLanguage: string;
   logo: string; banner: string;
   invoicePrefix: string; invoiceNextNumber: number;
+  invoiceWhatsappMessage: string;
   instagram: string; instagramEnabled: boolean; facebook: string; facebookEnabled: boolean;
   twitter: string; twitterEnabled: boolean; pinterest: string; pinterestEnabled: boolean;
   tiktok: string; tiktokEnabled: boolean; snapchat: string; snapchatEnabled: boolean;
@@ -185,6 +186,17 @@ export default function SettingsPage() {
           </div>
         </div>
         <p className="text-xs text-gray-400">مثال: {settings.invoicePrefix || 'INV'}-{String(settings.invoiceNextNumber || 1).padStart(4, '0')}</p>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">رسالة واتساب التلقائية للفواتير</label>
+          <textarea
+            value={settings.invoiceWhatsappMessage || ''}
+            onChange={(e) => update('invoiceWhatsappMessage', e.target.value)}
+            rows={10}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm"
+            dir="auto"
+          />
+          <p className="text-xs text-gray-400 mt-2" dir="ltr">{`يمكنك استخدام: {customerName} {invoiceNumber} {date} {items} {discountLine} {vatLine} {total} {storeName} {storeNameEn}`}</p>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">

@@ -255,11 +255,13 @@ export default function AttendancePage() {
                 <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center">
                   <FiCheckCircle size={40} className="text-emerald-500" />
                 </div>
-                <p className="text-xl font-bold text-gray-800">أريج الأقحوان ✅</p>
-                <p className="text-sm text-emerald-600 font-semibold">تم تسجيل حضورك اليوم</p>
-                <p className="text-sm text-gray-500">
-                  وقت الحضور: <span dir="ltr" className="font-semibold">{records.find(r => r.workerId === authUser?.id && r.date === today)?.checkInTime}</span>
-                </p>
+                <div>
+                  <p className="text-xl font-bold text-gray-800">أريج الأقحوان ✅</p>
+                  <p className="text-sm text-emerald-600 font-semibold">تم تسجيل حضورك اليوم</p>
+                  <p className="text-sm text-gray-500">
+                    وقت الحضور بتوقيت السعودية: <span dir="ltr" className="font-semibold">{records.find(r => r.workerId === authUser?.id && r.date === today)?.checkInTime}</span>
+                  </p>
+                </div>
               </div>
             ) : (
               <>
@@ -420,7 +422,7 @@ export default function AttendancePage() {
                     <tr className="bg-gray-50 border-b border-gray-100">
                       {!isWorker && <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">الموظف</th>}
                       <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">التاريخ</th>
-                      <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">وقت الحضور</th>
+                      <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">وقت الحضور (السعودية)</th>
                       <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">الطريقة</th>
                     </tr>
                   </thead>
