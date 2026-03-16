@@ -8,7 +8,7 @@ interface AttendanceRecord {
   _id: string;
   date: string;
   checkInTime: string;
-  method: 'qr' | 'manual';
+  method: 'qr';
 }
 
 interface WorkerInfo {
@@ -23,9 +23,10 @@ export default function WorkerDashboardHome() {
   const [loading, setLoading] = useState(true);
   const [todayMarked, setTodayMarked] = useState(false);
 
-  const today = new Date().toLocaleDateString('en-CA');
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Riyadh' }).format(new Date());
   const todayAr = new Date().toLocaleDateString('ar-SA', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    timeZone: 'Asia/Riyadh',
   });
 
   useEffect(() => {
@@ -172,8 +173,8 @@ export default function WorkerDashboardHome() {
                     <FiClock size={13} className="text-gray-400" />
                     <span dir="ltr">{record.checkInTime}</span>
                   </div>
-                  <span className={`text-xs mt-0.5 block text-left ${record.method === 'qr' ? 'text-blue-500' : 'text-amber-500'}`}>
-                    {record.method === 'qr' ? '📱 QR' : '✋ يدوي'}
+                  <span className="text-xs mt-0.5 block text-left text-blue-500">
+                    📱 QR
                   </span>
                 </div>
               </div>

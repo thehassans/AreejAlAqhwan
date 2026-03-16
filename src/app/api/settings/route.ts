@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Settings from '@/models/Settings';
+import { DEFAULT_INVOICE_WHATSAPP_MESSAGE } from '@/lib/invoiceWhatsApp';
+
+const normalizeSettingsPayload = (body: Record<string, unknown>) => ({
+  ...body,
+  invoiceWhatsappMessage: typeof body.invoiceWhatsappMessage === 'string' && body.invoiceWhatsappMessage.trim()
+    ? body.invoiceWhatsappMessage
+    : DEFAULT_INVOICE_WHATSAPP_MESSAGE,
+});
 
 export async function GET() {
   try {
@@ -8,6 +16,9 @@ export async function GET() {
     let settings = await Settings.findOne();
     if (!settings) {
       settings = await Settings.create({});
+    } else if (!settings.invoiceWhatsappMessage) {
+      settings.invoiceWhatsappMessage = DEFAULT_INVOICE_WHATSAPP_MESSAGE;
+      await settings.save();
     }
     return NextResponse.json(settings);
   } catch (error) {
@@ -19,7 +30,7 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   try {
     await dbConnect();
-    const body = await req.json();
+    const body = normalizeSettingsPayload(await req.json());
     let settings = await Settings.findOne();
     if (!settings) {
       settings = await Settings.create(body);

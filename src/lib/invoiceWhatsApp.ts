@@ -26,19 +26,19 @@ export interface InvoiceWhatsAppSettings {
 
 export const DEFAULT_INVOICE_WHATSAPP_MESSAGE = `Dear {customerName},
 
-Thank you for your trust and for choosing "{storeNameEn}".
+Thank you for your trust and for choosing "{storeNameEn}" to be a part of your story. Every flower in our store has been lovingly selected, and every gift carefully packaged to bring joy to you and your loved ones. We hope this arrangement fills your day with beauty and fragrance.
 
 With love,
-{storeNameEn}
+The {storeNameEn} Team 🌷
 
 ────────────────
 
 عزيزي/عزيزتي {customerName}،
 
-نشكركم على ثقتكم واختياركم "{storeName}".
+نشكركم على ثقتكم واختياركم "{storeName}" لتكون جزءًا من قصتكم. كل زهرة في متجرنا مختارة بعناية، وكل هدية مُغلفة بحرص لتُضفي البهجة على يومكم ويوم أحبائكم. نتمنى أن تُملأ هذه الباقة يومكم بالجمال والعبير.
 
 مع خالص الحب،
-{storeName}
+فريق {storeName} 🌷
 
 ────────────────
 فاتورة رقم: {invoiceNumber}

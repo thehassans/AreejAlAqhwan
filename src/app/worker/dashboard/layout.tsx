@@ -6,8 +6,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   FiHome, FiFileText, FiPackage, FiShoppingCart, FiUsers,
-  FiSettings, FiLogOut, FiMenu, FiX, FiCamera,
+  FiSettings, FiLogOut, FiCamera,
 } from 'react-icons/fi';
+import DashboardMobileNav from '@/components/DashboardMobileNav';
 
 interface WorkerPayload {
   name: string;
@@ -28,7 +29,6 @@ export default function WorkerDashboardLayout({ children }: { children: React.Re
   const pathname = usePathname();
   const [worker, setWorker] = useState<WorkerPayload | null>(null);
   const [checking, setChecking] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     fetch('/api/worker-auth/check')
@@ -57,17 +57,13 @@ export default function WorkerDashboardLayout({ children }: { children: React.Re
 
   const allowedNavItems = [
     { href: '/worker/dashboard', label: 'الرئيسية', icon: FiHome },
-    { href: '/worker/dashboard/scan', label: 'تسجيل الحضور', icon: FiCamera },
+    { href: '/worker/dashboard/scan', label: 'تسجيل الحضور', icon: FiCamera, variant: 'accent' as const },
     ...(worker?.pageAccess || []).map(key => PAGE_MAP[key]).filter(Boolean),
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/30 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
-      )}
-
-      <aside className={`fixed lg:static inset-y-0 right-0 z-50 w-64 bg-white border-l border-gray-200 transform transition-transform lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
+    <div className="min-h-screen bg-gray-50 lg:flex">
+      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-l lg:border-gray-200 lg:bg-white">
         <div className="flex items-center justify-between p-4 border-b">
           <Link href="/worker/dashboard" className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 relative ring-2 ring-[#5B7B6D]/20">
@@ -78,9 +74,6 @@ export default function WorkerDashboardLayout({ children }: { children: React.Re
               <span className="text-xs text-gray-400">لوحة الموظف</span>
             </div>
           </Link>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1" aria-label="Close sidebar">
-            <FiX size={20} />
-          </button>
         </div>
 
         {/* Worker Info */}
@@ -107,7 +100,6 @@ export default function WorkerDashboardLayout({ children }: { children: React.Re
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                   isScan
                     ? isActive
@@ -130,7 +122,7 @@ export default function WorkerDashboardLayout({ children }: { children: React.Re
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
+        <div className="mt-auto p-4 border-t bg-white">
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors"
@@ -141,26 +133,29 @@ export default function WorkerDashboardLayout({ children }: { children: React.Re
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 lg:hidden">
-          <button onClick={() => setSidebarOpen(true)} className="p-2" aria-label="Open sidebar">
-            <FiMenu size={20} />
-          </button>
-          <div className="flex items-center gap-2 flex-1">
-            <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 relative">
-              <Image src="/logo.png" alt="Logo" fill className="object-cover" unoptimized />
+      <div className="flex min-h-screen flex-1 flex-col min-w-0">
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-200 px-4 py-3 lg:hidden">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 relative">
+                <Image src="/logo.png" alt="Logo" fill className="object-cover" unoptimized />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-base font-bold text-[#5B7B6D] truncate">أريج الأقحوان</h1>
+                {worker && <p className="text-xs text-gray-400 truncate">{worker.name}</p>}
+              </div>
             </div>
-            <h1 className="text-base font-bold text-[#5B7B6D]">أريج الأقحوان</h1>
+            <button onClick={handleLogout} className="shrink-0 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors">
+              خروج
+            </button>
           </div>
-          {worker && (
-            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg truncate max-w-[100px]">
-              {worker.name}
-            </span>
-          )}
         </header>
-        <main className="flex-1 p-4 lg:p-6 overflow-auto">
+        <main className="flex-1 p-4 pb-24 lg:p-6 lg:pb-6 overflow-auto">
           {children}
         </main>
+        <div className="lg:hidden">
+          <DashboardMobileNav items={allowedNavItems} />
+        </div>
       </div>
     </div>
   );

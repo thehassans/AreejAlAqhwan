@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiX, FiCheck, FiUser, FiPhone, FiMail, FiLock, FiShield, FiUserCheck, FiToggleLeft, FiToggleRight, FiCheckCircle } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiX, FiCheck, FiUser, FiPhone, FiMail, FiLock, FiShield, FiUserCheck, FiToggleLeft, FiToggleRight } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 interface Worker {
@@ -31,7 +31,6 @@ export default function WorkersPage() {
   const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
-  const [markingAttendance, setMarkingAttendance] = useState<string | null>(null);
 
   const fetchWorkers = () => {
     fetch('/api/workers').then(r => r.json()).then(data => { setWorkers(data); setLoading(false); }).catch(() => setLoading(false));
@@ -96,27 +95,6 @@ export default function WorkersPage() {
     const res = await fetch(`/api/workers/${id}`, { method: 'DELETE' });
     if (res.ok) { toast.success('تم حذف الموظف'); fetchWorkers(); }
     else toast.error('فشل الحذف');
-  };
-
-  const markAttendance = async (worker: Worker) => {
-    setMarkingAttendance(worker._id);
-    try {
-      const res = await fetch('/api/attendance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workerId: worker._id, method: 'manual' }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        toast.success(`✅ تم تسجيل حضور ${worker.name}`);
-      } else {
-        toast.error(data.error || 'فشل تسجيل الحضور');
-      }
-    } catch {
-      toast.error('حدث خطأ');
-    } finally {
-      setMarkingAttendance(null);
-    }
   };
 
   if (loading) {
@@ -259,20 +237,9 @@ export default function WorkersPage() {
                     )}
                   </div>
                 </div>
-
-                {/* Mark Attendance Button */}
-                <button
-                  onClick={() => markAttendance(worker)}
-                  disabled={markingAttendance === worker._id}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 border border-emerald-100"
-                >
-                  {markingAttendance === worker._id ? (
-                    <div className="animate-spin w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full" />
-                  ) : (
-                    <FiCheckCircle size={16} />
-                  )}
-                  تسجيل الحضور يدوياً
-                </button>
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-center text-sm font-semibold text-emerald-700">
+                  الحضور يتم فقط عبر مسح رمز QR
+                </div>
               </div>
             </div>
           ))}

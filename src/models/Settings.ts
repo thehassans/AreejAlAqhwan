@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { DEFAULT_INVOICE_WHATSAPP_MESSAGE } from '@/lib/invoiceWhatsApp';
 
 const SettingsSchema = new mongoose.Schema({
   storeName: { type: String, default: 'أريج الأقحوان' },
@@ -29,7 +30,7 @@ const SettingsSchema = new mongoose.Schema({
   defaultLanguage: { type: String, enum: ['ar', 'en'], default: 'ar' },
   invoicePrefix: { type: String, default: 'INV' },
   invoiceNextNumber: { type: Number, default: 1 },
-  invoiceWhatsappMessage: { type: String, default: '' },
+  invoiceWhatsappMessage: { type: String, default: DEFAULT_INVOICE_WHATSAPP_MESSAGE },
 }, { timestamps: true });
 
 export default mongoose.models.Settings || mongoose.model('Settings', SettingsSchema);
