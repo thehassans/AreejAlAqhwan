@@ -9,6 +9,7 @@ import QRCode from 'qrcode';
 import toast from 'react-hot-toast';
 import { buildInvoiceWhatsAppMessage } from '@/lib/invoiceWhatsApp';
 import { useT } from '@/lib/i18n';
+import { toSaIntl } from '@/lib/phone';
 
 interface InvoiceData {
   _id: string;
@@ -197,14 +198,19 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
   // Compute WhatsApp URL as derived value so it can be used directly in an <a> href
   const whatsappUrl = useMemo(() => {
     if (!invoice) return '#';
-    const waMessage = buildInvoiceWhatsAppMessage(invoice, settings || undefined);
-
-    let phone = invoice.customerPhone?.replace(/[^0-9]/g, '') || '';
-    if (phone.startsWith('0')) phone = '966' + phone.slice(1);
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const invoiceLink = invoice._id ? `${origin}/invoice/${invoice._id}` : '';
+    const waMessage = buildInvoiceWhatsAppMessage({ ...invoice, invoiceLink }, settings || undefined);
+    const phone = toSaIntl(invoice.customerPhone || '');
     return phone
       ? `https://wa.me/${phone}?text=${encodeURIComponent(waMessage)}`
       : `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
   }, [invoice, settings]);
+
+  // When admin clicks WhatsApp also download PDF locally so they can attach it manually if desired
+  const handleWhatsAppClick = async () => {
+    await handleDownloadPDF();
+  };
 
   // Download PDF only
   const handleDownloadPDF = async () => {
@@ -258,7 +264,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
           <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors">
             <FiDownload size={14} /> PDF
           </button>
-          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors">
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" onClick={handleWhatsAppClick} className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors">
             <FaWhatsapp size={14} /> {t('واتساب', 'WhatsApp')}
           </a>
           <button onClick={handlePrintFn} className="flex items-center gap-2 px-3 py-2 bg-gray-800 text-white rounded-xl text-sm font-medium hover:bg-gray-700 transition-colors">

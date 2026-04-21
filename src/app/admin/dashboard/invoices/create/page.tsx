@@ -254,6 +254,7 @@ export default function CreateInvoicePage() {
         const inv = await res.json();
         toast.success(t('تم إنشاء الفاتورة بنجاح', 'Invoice created successfully'));
         if (andWhatsapp) {
+          const invoiceLink = inv?._id ? `${window.location.origin}/invoice/${inv._id}` : '';
           const message = buildInvoiceWhatsAppMessage(
             {
               customerName: inv.customerName || customerName,
@@ -266,6 +267,7 @@ export default function CreateInvoicePage() {
               vat: inv.vat ?? (settings?.vatPercentage || 0),
               vatAmount: inv.vatAmount ?? vatAmount,
               items: (inv.items ?? normalizedItems) as InvoiceItem[],
+              invoiceLink,
             },
             settings || undefined,
           );
@@ -278,7 +280,8 @@ export default function CreateInvoicePage() {
           } else {
             window.open(waUrl, '_blank', 'noopener,noreferrer');
           }
-          router.push('/admin/dashboard/invoices');
+          // Navigate admin to the invoice detail page so they can quickly attach the PDF in WhatsApp if needed
+          router.push(`/admin/dashboard/invoices/${inv._id}`);
         } else if (andPrint) {
           router.push(`/admin/dashboard/invoices/${inv._id}?print=true`);
         } else {

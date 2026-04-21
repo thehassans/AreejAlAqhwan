@@ -16,6 +16,7 @@ export interface InvoiceWhatsAppData {
   vat?: number;
   vatAmount?: number;
   items?: InvoiceWhatsAppItem[];
+  invoiceLink?: string;
 }
 
 export interface InvoiceWhatsAppSettings {
@@ -46,7 +47,8 @@ The {storeNameEn} Team 🌷
 {items}
 {discountLine}
 {vatLine}
-الإجمالي: {total} ر.س`;
+الإجمالي: {total} ر.س
+{invoiceLinkLine}`;
 
 const formatDate = (value: string) => {
   const dt = new Date(value);
@@ -89,6 +91,10 @@ export const buildInvoiceWhatsAppMessage = (
     storeNameEn,
     discountLine: discountAmount > 0 ? `الخصم: ${formatAmount(discountAmount)} ر.س` : '',
     vatLine: (invoice.vatAmount || 0) > 0 ? `ضريبة (${invoice.vat || 0}%): ${formatAmount(invoice.vatAmount)} ر.س` : '',
+    invoiceLink: invoice.invoiceLink || '',
+    invoiceLinkLine: invoice.invoiceLink
+      ? `\n\nعرض / تحميل الفاتورة PDF:\nView / Download invoice PDF:\n${invoice.invoiceLink}`
+      : '',
   };
 
   let message = template;
