@@ -54,8 +54,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-gray-50 lg:flex">
-      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-l lg:border-gray-200 lg:bg-white">
-        <div className="flex items-center justify-between p-4 border-b">
+      <aside className="hidden lg:flex lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:flex-col lg:border-l lg:border-gray-200 lg:bg-white">
+        <div className="flex items-center justify-between p-4 border-b shrink-0">
           <Link href="/admin/dashboard" className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 relative ring-2 ring-[#5B7B6D]/20">
               <Image src="/logo.png" alt="Logo" fill className="object-cover" unoptimized />
@@ -63,7 +63,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="text-base font-bold text-[#5B7B6D]">أريج الأقحوان</span>
           </Link>
         </div>
-        <nav className="p-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 min-h-0 p-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/admin/dashboard' && pathname.startsWith(item.href));
             return (
@@ -75,7 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             );
           })}
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
+        <div className="shrink-0 p-4 border-t bg-white">
           <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors">
             <FiLogOut size={18} />
             تسجيل الخروج

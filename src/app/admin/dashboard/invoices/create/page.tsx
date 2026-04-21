@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiPlus, FiTrash2, FiPrinter, FiSearch, FiX } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiPrinter, FiSearch, FiX, FiChevronDown, FiChevronUp, FiMove } from 'react-icons/fi';
+import { FaWhatsapp } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import SarIcon from '@/components/SarIcon';
+import { buildInvoiceWhatsAppMessage } from '@/lib/invoiceWhatsApp';
 
 interface InvoiceItem {
   name: string;
@@ -54,8 +56,12 @@ interface SettingsData {
   vatEnabled: boolean;
   vatPercentage: number;
   storeName: string;
+  storeNameEn?: string;
   phone: string;
   address: string;
+  invoicePrefix?: string;
+  invoiceNextNumber?: number;
+  invoiceWhatsappMessage?: string;
 }
 
 export default function CreateInvoicePage() {
@@ -79,6 +85,10 @@ export default function CreateInvoicePage() {
   const [showPicker, setShowPicker] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<number>(0);
   const [pickerSearch, setPickerSearch] = useState('');
+  const [catalogOpen, setCatalogOpen] = useState(true);
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [dragOverRow, setDragOverRow] = useState<number | null>(null);
+  const [dragOverList, setDragOverList] = useState(false);
 
   useEffect(() => {
     fetch('/api/settings').then((r) => r.json()).then((s) => {
@@ -111,14 +121,71 @@ export default function CreateInvoicePage() {
 
   const openPicker = (index: number) => { setPickerTarget(index); setPickerSearch(''); setShowPicker(true); };
 
+  const effectivePriceOf = (p: CatalogProduct) => (p.discount > 0
+    ? (p.discountType === 'percentage' ? p.price * (1 - p.discount / 100) : Math.max(0, p.price - p.discount))
+    : p.price);
+
   const selectFromCatalog = (p: CatalogProduct) => {
-    const effectivePrice = p.discount > 0
-      ? (p.discountType === 'percentage' ? p.price * (1 - p.discount / 100) : Math.max(0, p.price - p.discount))
-      : p.price;
+    const effectivePrice = effectivePriceOf(p);
     const newItems = [...items];
     newItems[pickerTarget] = { ...newItems[pickerTarget], name: p.name, nameAr: p.nameAr, unitPrice: effectivePrice, total: newItems[pickerTarget].quantity * effectivePrice };
     setItems(newItems);
     setShowPicker(false);
+  };
+
+  // ---- Drag & drop from catalog to items ----
+  const onProductDragStart = (e: React.DragEvent, p: CatalogProduct) => {
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('application/x-invoice-product', JSON.stringify({ id: p._id }));
+    e.dataTransfer.setData('text/plain', p.nameAr || p.name);
+  };
+
+  const readDroppedProduct = (e: React.DragEvent): CatalogProduct | null => {
+    const raw = e.dataTransfer.getData('application/x-invoice-product');
+    if (!raw) return null;
+    try {
+      const { id } = JSON.parse(raw) as { id: string };
+      return catalog.find((p) => p._id === id) || null;
+    } catch { return null; }
+  };
+
+  const replaceItemWithProduct = (index: number, p: CatalogProduct) => {
+    const effectivePrice = effectivePriceOf(p);
+    setItems((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], name: p.name, nameAr: p.nameAr, unitPrice: effectivePrice, total: next[index].quantity * effectivePrice };
+      return next;
+    });
+  };
+
+  const appendItemFromProduct = (p: CatalogProduct) => {
+    const effectivePrice = effectivePriceOf(p);
+    setItems((prev) => {
+      // If last row is empty, fill it instead of appending
+      const last = prev[prev.length - 1];
+      if (last && !last.name && !last.nameAr && last.unitPrice === 0) {
+        const next = [...prev];
+        next[next.length - 1] = { name: p.name, nameAr: p.nameAr, quantity: last.quantity || 1, unitPrice: effectivePrice, total: (last.quantity || 1) * effectivePrice };
+        return next;
+      }
+      return [...prev, { name: p.name, nameAr: p.nameAr, quantity: 1, unitPrice: effectivePrice, total: effectivePrice }];
+    });
+  };
+
+  const handleRowDrop = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverRow(null);
+    setDragOverList(false);
+    const p = readDroppedProduct(e);
+    if (p) replaceItemWithProduct(index, p);
+  };
+
+  const handleListDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverList(false);
+    const p = readDroppedProduct(e);
+    if (p) appendItemFromProduct(p);
   };
 
   const addItem = () => setItems([...items, { name: '', nameAr: '', quantity: 1, unitPrice: 0, total: 0 }]);
@@ -150,9 +217,11 @@ export default function CreateInvoicePage() {
   const vatAmount = settings?.vatEnabled ? (discountedSubtotal * (settings.vatPercentage || 15)) / 100 : 0;
   const total = discountedSubtotal + vatAmount;
 
-  const handleSave = async (andPrint = false) => {
+  const handleSave = async (opts: { print?: boolean; whatsapp?: boolean } = {}) => {
+    const { print: andPrint = false, whatsapp: andWhatsapp = false } = opts;
     if (!customerName.trim()) { toast.error('يرجى إدخال اسم العميل'); return; }
     if (items.some((i) => !i.nameAr && !i.name)) { toast.error('يرجى إدخال اسم المنتج'); return; }
+    if (andWhatsapp && !customerPhone.trim()) { toast.error('يرجى إدخال رقم جوال العميل لإرسال الفاتورة عبر واتساب'); return; }
 
     setSaving(true);
     try {
@@ -168,7 +237,30 @@ export default function CreateInvoicePage() {
       if (res.ok) {
         const inv = await res.json();
         toast.success('تم إنشاء الفاتورة بنجاح');
-        if (andPrint) {
+        if (andWhatsapp) {
+          const message = buildInvoiceWhatsAppMessage(
+            {
+              customerName: inv.customerName || customerName,
+              invoiceNumber: inv.invoiceNumber || invoiceNumber,
+              createdAt: inv.createdAt || new Date().toISOString(),
+              total: inv.total ?? total,
+              subtotal: inv.subtotal ?? subtotal,
+              discount: inv.discount ?? discount,
+              discountType: inv.discountType ?? discountType,
+              vat: inv.vat ?? (settings?.vatPercentage || 0),
+              vatAmount: inv.vatAmount ?? vatAmount,
+              items: (inv.items ?? items) as InvoiceItem[],
+            },
+            settings || undefined,
+          );
+          let phone = (inv.customerPhone || customerPhone).replace(/[^0-9]/g, '');
+          if (phone.startsWith('0')) phone = '966' + phone.slice(1);
+          const waUrl = phone
+            ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+            : `https://wa.me/?text=${encodeURIComponent(message)}`;
+          window.open(waUrl, '_blank', 'noopener,noreferrer');
+          router.push('/admin/dashboard/invoices');
+        } else if (andPrint) {
           router.push(`/admin/dashboard/invoices/${inv._id}?print=true`);
         } else {
           router.push('/admin/dashboard/invoices');
@@ -187,6 +279,12 @@ export default function CreateInvoicePage() {
     p.name.toLowerCase().includes(pickerSearch.toLowerCase()) ||
     p.nameAr.includes(pickerSearch) ||
     p.category.includes(pickerSearch)
+  );
+
+  const filteredCatalogPanel = catalog.filter(p =>
+    p.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+    p.nameAr.includes(catalogSearch) ||
+    p.category.includes(catalogSearch)
   );
 
   return (
@@ -300,14 +398,76 @@ export default function CreateInvoicePage() {
           </div>
         </div>
 
-        <div>
+        {/* Catalog drag-and-drop panel */}
+        <div className="border border-dashed border-[#5B7B6D]/30 rounded-xl bg-[#5B7B6D]/[0.03]">
+          <button
+            type="button"
+            onClick={() => setCatalogOpen((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-[#5B7B6D]"
+          >
+            <span className="flex items-center gap-2"><FiMove size={14} /> اسحب منتجاً من الكتالوج وأفلته على صف أو هنا لإضافته</span>
+            {catalogOpen ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+          </button>
+          {catalogOpen && (
+            <div className="px-4 pb-4 space-y-3">
+              <div className="relative">
+                <FiSearch size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={catalogSearch}
+                  onChange={(e) => setCatalogSearch(e.target.value)}
+                  placeholder="ابحث في المنتجات..."
+                  className="w-full px-4 py-2 pr-9 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-[#5B7B6D]/30 outline-none"
+                />
+              </div>
+              {filteredCatalogPanel.length === 0 ? (
+                <p className="text-center text-xs text-gray-400 py-4">لا توجد منتجات مطابقة</p>
+              ) : (
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {filteredCatalogPanel.slice(0, 40).map((p) => (
+                    <div
+                      key={p._id}
+                      draggable
+                      onDragStart={(e) => onProductDragStart(e, p)}
+                      onClick={() => appendItemFromProduct(p)}
+                      title="اسحب أو انقر للإضافة"
+                      className="shrink-0 w-36 bg-white border border-gray-200 rounded-xl p-2 cursor-grab active:cursor-grabbing hover:border-[#5B7B6D] hover:shadow-md transition"
+                    >
+                      {p.images?.[0] ? (
+                        <img src={p.images[0]} alt="" className="w-full h-20 rounded-lg object-cover mb-2" />
+                      ) : (
+                        <div className="w-full h-20 rounded-lg bg-gray-100 mb-2" />
+                      )}
+                      <p className="text-xs font-semibold text-gray-800 truncate">{p.nameAr}</p>
+                      <p className="text-[10px] text-gray-400 truncate">{p.name}</p>
+                      <p className="text-xs font-bold text-[#5B7B6D] mt-1">{effectivePriceOf(p).toFixed(2)} ر.س</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div
+          onDragOver={(e) => { if (e.dataTransfer.types.includes('application/x-invoice-product')) { e.preventDefault(); setDragOverList(true); } }}
+          onDragLeave={() => setDragOverList(false)}
+          onDrop={handleListDrop}
+          className={dragOverList ? 'ring-2 ring-[#5B7B6D] rounded-xl' : ''}
+        >
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-gray-800">المنتجات</h3>
             <button onClick={addItem} className="flex items-center gap-1 text-sm text-[#5B7B6D] hover:underline"><FiPlus size={14} /> إضافة منتج</button>
           </div>
           <div className="space-y-3">
             {items.map((item, i) => (
-              <div key={i} className="grid grid-cols-12 gap-2 items-end">
+              <div
+                key={i}
+                onDragOver={(e) => { if (e.dataTransfer.types.includes('application/x-invoice-product')) { e.preventDefault(); e.stopPropagation(); setDragOverRow(i); } }}
+                onDragLeave={() => setDragOverRow((prev) => (prev === i ? null : prev))}
+                onDrop={(e) => handleRowDrop(e, i)}
+                className={`grid grid-cols-12 gap-2 items-end rounded-lg transition ${dragOverRow === i ? 'ring-2 ring-[#5B7B6D] bg-[#5B7B6D]/5 p-1' : ''}`}
+              >
                 <div className="col-span-3">
                   {i === 0 && <label className="block text-xs text-gray-500 mb-1">المنتج (عربي)</label>}
                   <input type="text" value={item.nameAr} onChange={(e) => updateItem(i, 'nameAr', e.target.value)}
@@ -393,14 +553,18 @@ export default function CreateInvoicePage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 pt-4 border-t">
-          <button onClick={() => handleSave(false)} disabled={saving}
+        <div className="flex flex-wrap items-center gap-3 pt-4 border-t">
+          <button onClick={() => handleSave()} disabled={saving}
             className="px-6 py-2 bg-[#5B7B6D] text-white rounded-xl text-sm font-medium hover:bg-[#4a6a5c] transition-colors disabled:opacity-50">
             {saving ? 'جاري الحفظ...' : 'حفظ الفاتورة'}
           </button>
-          <button onClick={() => handleSave(true)} disabled={saving}
+          <button onClick={() => handleSave({ print: true })} disabled={saving}
             className="flex items-center gap-2 px-6 py-2 bg-gray-800 text-white rounded-xl text-sm font-medium hover:bg-gray-700 transition-colors disabled:opacity-50">
             <FiPrinter size={14} /> حفظ وطباعة
+          </button>
+          <button onClick={() => handleSave({ whatsapp: true })} disabled={saving}
+            className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50">
+            <FaWhatsapp size={14} /> حفظ وإرسال عبر واتساب
           </button>
         </div>
       </div>
