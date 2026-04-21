@@ -4,6 +4,17 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiUpload, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
+
+const CATEGORIES: Array<{ value: string; ar: string; en: string }> = [
+  { value: 'عام', ar: 'عام', en: 'General' },
+  { value: 'زهور', ar: 'زهور', en: 'Flowers' },
+  { value: 'باقات', ar: 'باقات', en: 'Bouquets' },
+  { value: 'هدايا', ar: 'هدايا', en: 'Gifts' },
+  { value: 'شوكولاتة', ar: 'شوكولاتة', en: 'Chocolate' },
+  { value: 'عطور', ar: 'عطور', en: 'Perfumes' },
+  { value: 'تنسيقات', ar: 'تنسيقات', en: 'Arrangements' },
+];
 
 interface Product {
   name: string; nameAr: string; description: string; descriptionAr: string;
@@ -12,6 +23,7 @@ interface Product {
 }
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = useT();
   const { id } = use(params);
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
@@ -32,12 +44,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       const data = await res.json();
       if (data.url) setProduct({ ...product, images: [...product.images, data.url] });
-    } catch { toast.error('فشل رفع الصورة'); }
+    } catch { toast.error(t('فشل رفع الصورة', 'Image upload failed')); }
     finally { setUploading(false); }
   };
 
   const handleSave = async () => {
-    if (!product?.nameAr.trim()) { toast.error('يرجى إدخال اسم المنتج'); return; }
+    if (!product?.nameAr.trim()) { toast.error(t('يرجى إدخال اسم المنتج', 'Please enter the product name')); return; }
     setSaving(true);
     try {
       const res = await fetch(`/api/products/${id}`, {
@@ -45,9 +57,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(product),
       });
-      if (res.ok) { toast.success('تم تحديث المنتج'); router.push('/admin/dashboard/products'); }
-      else toast.error('فشل تحديث المنتج');
-    } catch { toast.error('حدث خطأ'); }
+      if (res.ok) { toast.success(t('تم تحديث المنتج', 'Product updated')); router.push('/admin/dashboard/products'); }
+      else toast.error(t('فشل تحديث المنتج', 'Failed to update product'));
+    } catch { toast.error(t('حدث خطأ', 'An error occurred')); }
     finally { setSaving(false); }
   };
 
@@ -57,55 +69,55 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <h1 className="text-2xl font-bold text-gray-800">تعديل المنتج</h1>
+      <h1 className="text-2xl font-bold text-gray-800">{t('تعديل المنتج', 'Edit product')}</h1>
       <div className="bg-white rounded-xl shadow-sm border p-6 space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">اسم المنتج (عربي) *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('اسم المنتج (عربي)', 'Product name (Arabic)')} *</label>
             <input type="text" value={product.nameAr} onChange={(e) => update('nameAr', e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">اسم المنتج (إنجليزي)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('اسم المنتج (إنجليزي)', 'Product name (English)')}</label>
             <input type="text" value={product.name} onChange={(e) => update('name', e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" dir="ltr" />
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">الوصف (عربي)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('الوصف (عربي)', 'Description (Arabic)')}</label>
             <textarea value={product.descriptionAr} onChange={(e) => update('descriptionAr', e.target.value)} rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">الوصف (إنجليزي)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('الوصف (إنجليزي)', 'Description (English)')}</label>
             <textarea value={product.description} onChange={(e) => update('description', e.target.value)} rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" dir="ltr" />
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">السعر (ر.س) *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('السعر (ر.س)', 'Price (SAR)')} *</label>
             <input type="number" min="0" step="0.01" value={product.price} onChange={(e) => update('price', parseFloat(e.target.value) || 0)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">التصنيف</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('التصنيف', 'Category')}</label>
             <select value={product.category} onChange={(e) => update('category', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" title="التصنيف">
-              {['عام', 'زهور', 'باقات', 'هدايا', 'شوكولاتة', 'عطور', 'تنسيقات'].map((c) => <option key={c} value={c}>{c}</option>)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" title={t('التصنيف', 'Category')}>
+              {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{t(c.ar, c.en)}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">نوع الخصم</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('نوع الخصم', 'Discount type')}</label>
             <select value={product.discountType || 'percentage'} onChange={(e) => update('discountType', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" title="نوع الخصم">
-              <option value="percentage">نسبة مئوية (%)</option>
-              <option value="fixed">مبلغ ثابت (ر.س)</option>
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" title={t('نوع الخصم', 'Discount type')}>
+              <option value="percentage">{t('نسبة مئوية (%)', 'Percentage (%)')}</option>
+              <option value="fixed">{t('مبلغ ثابت (ر.س)', 'Fixed amount (SAR)')}</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">قيمة الخصم</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('قيمة الخصم', 'Discount value')}</label>
             <input type="number" min="0" step="0.01" value={product.discount || 0} onChange={(e) => update('discount', parseFloat(e.target.value) || 0)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
           </div>
@@ -113,15 +125,15 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         <div className="flex items-center gap-6">
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={product.inStock} onChange={(e) => update('inStock', e.target.checked)} className="w-4 h-4 accent-[#5B7B6D]" />
-            <span className="text-sm">متوفر</span>
+            <span className="text-sm">{t('متوفر', 'In stock')}</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={product.featured} onChange={(e) => update('featured', e.target.checked)} className="w-4 h-4 accent-[#5B7B6D]" />
-            <span className="text-sm">مميز</span>
+            <span className="text-sm">{t('مميز', 'Featured')}</span>
           </label>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">صور المنتج</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">{t('صور المنتج', 'Product images')}</label>
           <div className="flex flex-wrap gap-3">
             {product.images.map((img, i) => (
               <div key={i} className="relative w-24 h-24 rounded-lg overflow-hidden border">
@@ -131,7 +143,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             ))}
             <label className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-[#5B7B6D]">
               <FiUpload size={20} className="text-gray-400" />
-              <span className="text-xs text-gray-400 mt-1">{uploading ? 'جاري...' : 'رفع'}</span>
+              <span className="text-xs text-gray-400 mt-1">{uploading ? t('جاري...', 'Loading...') : t('رفع', 'Upload')}</span>
               <input type="file" accept="image/*" onChange={handleUpload} className="hidden" />
             </label>
           </div>
@@ -139,9 +151,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         <div className="flex gap-3 pt-4 border-t">
           <button onClick={handleSave} disabled={saving}
             className="px-6 py-2 bg-[#5B7B6D] text-white rounded-xl text-sm font-medium hover:bg-[#4a6a5c] disabled:opacity-50">
-            {saving ? 'جاري الحفظ...' : 'تحديث المنتج'}
+            {saving ? t('جاري الحفظ...', 'Saving...') : t('تحديث المنتج', 'Update product')}
           </button>
-          <button onClick={() => router.back()} className="px-6 py-2 border border-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50">إلغاء</button>
+          <button onClick={() => router.back()} className="px-6 py-2 border border-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50">{t('إلغاء', 'Cancel')}</button>
         </div>
       </div>
     </div>

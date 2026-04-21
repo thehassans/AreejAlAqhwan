@@ -4,8 +4,20 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiUpload, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
+
+const CATEGORIES: Array<{ value: string; ar: string; en: string }> = [
+  { value: 'عام', ar: 'عام', en: 'General' },
+  { value: 'زهور', ar: 'زهور', en: 'Flowers' },
+  { value: 'باقات', ar: 'باقات', en: 'Bouquets' },
+  { value: 'هدايا', ar: 'هدايا', en: 'Gifts' },
+  { value: 'شوكولاتة', ar: 'شوكولاتة', en: 'Chocolate' },
+  { value: 'عطور', ar: 'عطور', en: 'Perfumes' },
+  { value: 'تنسيقات', ar: 'تنسيقات', en: 'Arrangements' },
+];
 
 export default function CreateProductPage() {
+  const t = useT();
   const router = useRouter();
   const [name, setName] = useState('');
   const [nameAr, setNameAr] = useState('');
@@ -32,15 +44,15 @@ export default function CreateProductPage() {
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       const data = await res.json();
       if (data.url) setImages([...images, data.url]);
-    } catch { toast.error('فشل رفع الصورة'); }
+    } catch { toast.error(t('فشل رفع الصورة', 'Image upload failed')); }
     finally { setUploading(false); }
   };
 
   const removeImage = (index: number) => setImages(images.filter((_, i) => i !== index));
 
   const handleSave = async () => {
-    if (!nameAr.trim()) { toast.error('يرجى إدخال اسم المنتج بالعربي'); return; }
-    if (!price) { toast.error('يرجى إدخال السعر'); return; }
+    if (!nameAr.trim()) { toast.error(t('يرجى إدخال اسم المنتج بالعربي', 'Please enter the Arabic product name')); return; }
+    if (!price) { toast.error(t('يرجى إدخال السعر', 'Please enter the price')); return; }
     setSaving(true);
     try {
       const res = await fetch('/api/products', {
@@ -49,64 +61,64 @@ export default function CreateProductPage() {
         body: JSON.stringify({ name, nameAr, description, descriptionAr, price: parseFloat(price), category, inStock, featured, images, discount: parseFloat(discount) || 0, discountType }),
       });
       if (res.ok) {
-        toast.success('تم إضافة المنتج بنجاح');
+        toast.success(t('تم إضافة المنتج بنجاح', 'Product added successfully'));
         router.push('/admin/dashboard/products');
-      } else { toast.error('فشل إضافة المنتج'); }
-    } catch { toast.error('حدث خطأ'); }
+      } else { toast.error(t('فشل إضافة المنتج', 'Failed to add product')); }
+    } catch { toast.error(t('حدث خطأ', 'An error occurred')); }
     finally { setSaving(false); }
   };
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <h1 className="text-2xl font-bold text-gray-800">إضافة منتج جديد</h1>
+      <h1 className="text-2xl font-bold text-gray-800">{t('إضافة منتج جديد', 'Add new product')}</h1>
       <div className="bg-white rounded-xl shadow-sm border p-6 space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">اسم المنتج (عربي) *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('اسم المنتج (عربي)', 'Product name (Arabic)')} *</label>
             <input type="text" value={nameAr} onChange={(e) => setNameAr(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">اسم المنتج (إنجليزي)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('اسم المنتج (إنجليزي)', 'Product name (English)')}</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" dir="ltr" />
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">الوصف (عربي)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('الوصف (عربي)', 'Description (Arabic)')}</label>
             <textarea value={descriptionAr} onChange={(e) => setDescriptionAr(e.target.value)} rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">الوصف (إنجليزي)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('الوصف (إنجليزي)', 'Description (English)')}</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" dir="ltr" />
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">السعر (ر.س) *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('السعر (ر.س)', 'Price (SAR)')} *</label>
             <input type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">التصنيف</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('التصنيف', 'Category')}</label>
             <select value={category} onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" title="التصنيف">
-              {['عام', 'زهور', 'باقات', 'هدايا', 'شوكولاتة', 'عطور', 'تنسيقات'].map((c) => <option key={c} value={c}>{c}</option>)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" title={t('التصنيف', 'Category')}>
+              {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{t(c.ar, c.en)}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">نوع الخصم</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('نوع الخصم', 'Discount type')}</label>
             <select value={discountType} onChange={(e) => setDiscountType(e.target.value as 'percentage' | 'fixed')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" title="نوع الخصم">
-              <option value="percentage">نسبة مئوية (%)</option>
-              <option value="fixed">مبلغ ثابت (ر.س)</option>
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" title={t('نوع الخصم', 'Discount type')}>
+              <option value="percentage">{t('نسبة مئوية (%)', 'Percentage (%)')}</option>
+              <option value="fixed">{t('مبلغ ثابت (ر.س)', 'Fixed amount (SAR)')}</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">قيمة الخصم</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('قيمة الخصم', 'Discount value')}</label>
             <input type="number" min="0" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} placeholder="0"
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
           </div>
@@ -114,15 +126,15 @@ export default function CreateProductPage() {
         <div className="flex items-center gap-6">
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={inStock} onChange={(e) => setInStock(e.target.checked)} className="w-4 h-4 accent-[#5B7B6D]" />
-            <span className="text-sm">متوفر</span>
+            <span className="text-sm">{t('متوفر', 'In stock')}</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="w-4 h-4 accent-[#5B7B6D]" />
-            <span className="text-sm">مميز</span>
+            <span className="text-sm">{t('مميز', 'Featured')}</span>
           </label>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">صور المنتج</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">{t('صور المنتج', 'Product images')}</label>
           <div className="flex flex-wrap gap-3">
             {images.map((img, i) => (
               <div key={i} className="relative w-24 h-24 rounded-lg overflow-hidden border">
@@ -132,7 +144,7 @@ export default function CreateProductPage() {
             ))}
             <label className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-[#5B7B6D] transition-colors">
               <FiUpload size={20} className="text-gray-400" />
-              <span className="text-xs text-gray-400 mt-1">{uploading ? 'جاري...' : 'رفع'}</span>
+              <span className="text-xs text-gray-400 mt-1">{uploading ? t('جاري...', 'Loading...') : t('رفع', 'Upload')}</span>
               <input type="file" accept="image/*" onChange={handleUpload} className="hidden" />
             </label>
           </div>
@@ -140,9 +152,9 @@ export default function CreateProductPage() {
         <div className="flex gap-3 pt-4 border-t">
           <button onClick={handleSave} disabled={saving}
             className="px-6 py-2 bg-[#5B7B6D] text-white rounded-xl text-sm font-medium hover:bg-[#4a6a5c] transition-colors disabled:opacity-50">
-            {saving ? 'جاري الحفظ...' : 'حفظ المنتج'}
+            {saving ? t('جاري الحفظ...', 'Saving...') : t('حفظ المنتج', 'Save product')}
           </button>
-          <button onClick={() => router.back()} className="px-6 py-2 border border-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors">إلغاء</button>
+          <button onClick={() => router.back()} className="px-6 py-2 border border-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors">{t('إلغاء', 'Cancel')}</button>
         </div>
       </div>
     </div>

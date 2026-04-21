@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { FiCalendar, FiClock, FiRefreshCw, FiSearch, FiFilter, FiDownload, FiCheckCircle, FiSmartphone, FiCamera, FiX, FiUser } from 'react-icons/fi';
 import QRCode from 'qrcode';
 import toast from 'react-hot-toast';
+import { useT, useLocale } from '@/lib/i18n';
 
 interface AttendanceRecord {
   _id: string;
@@ -27,6 +28,8 @@ interface AuthUser {
 }
 
 export default function AttendancePage() {
+  const t = useT();
+  const { lang } = useLocale();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +53,7 @@ export default function AttendancePage() {
   const animFrameRef = useRef<number>(0);
   const scannedRef = useRef(false);
 
-  const todayFormatted = new Date().toLocaleDateString('ar-SA', {
+  const todayFormatted = new Date().toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Riyadh',
   });
 
@@ -75,7 +78,7 @@ export default function AttendancePage() {
       });
       setQrDataUrl(url);
     } catch {
-      toast.error('فشل إنشاء رمز QR');
+      toast.error(t('فشل إنشاء رمز QR', 'Failed to generate QR code'));
     } finally {
       setQrLoading(false);
     }
@@ -119,7 +122,7 @@ export default function AttendancePage() {
 
   const submitAttendance = useCallback(async (qrValue: string) => {
     if (!authUser) {
-      setScanError('تعذر التحقق من هويتك. يرجى تسجيل الخروج وإعادة الدخول.');
+      setScanError(t('تعذر التحقق من هويتك. يرجى تسجيل الخروج وإعادة الدخول.', 'Could not verify your identity. Please log out and sign in again.'));
       return;
     }
     setSubmitting(true);
@@ -131,15 +134,15 @@ export default function AttendancePage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setScanError(data.error || 'فشل تسجيل الحضور');
+        setScanError(data.error || t('فشل تسجيل الحضور', 'Attendance failed'));
       } else {
         setScanSuccess(true);
-        toast.success('تم تسجيل حضورك بنجاح! ✓');
+        toast.success(t('تم تسجيل حضورك بنجاح! ✓', 'Attendance recorded successfully! ✓'));
         fetchData();
         setTimeout(() => closeScanner(), 2500);
       }
     } catch {
-      setScanError('حدث خطأ، حاول مرة أخرى');
+      setScanError(t('حدث خطأ، حاول مرة أخرى', 'An error occurred, please try again'));
     } finally {
       setSubmitting(false);
     }
@@ -189,7 +192,7 @@ export default function AttendancePage() {
       };
       animFrameRef.current = requestAnimationFrame(tick);
     } catch {
-      setScanError('تعذر الوصول للكاميرا. يرجى السماح بالوصول وإعادة المحاولة.');
+      setScanError(t('تعذر الوصول للكاميرا. يرجى السماح بالوصول وإعادة المحاولة.', 'Cannot access camera. Please allow access and try again.'));
       setScanning(false);
     }
   }, [stopCamera, submitAttendance]);
@@ -226,12 +229,12 @@ export default function AttendancePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">سجل الحضور</h1>
+          <h1 className="text-2xl font-bold text-gray-800">{t('سجل الحضور', 'Attendance log')}</h1>
           <p className="text-sm text-gray-500 mt-0.5">{todayFormatted}</p>
         </div>
         <button onClick={fetchData} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all">
           <FiRefreshCw size={15} />
-          تحديث
+          {t('تحديث', 'Refresh')}
         </button>
       </div>
 
@@ -244,8 +247,8 @@ export default function AttendancePage() {
                 <FiUser size={20} />
               </div>
               <div>
-                <p className="font-bold text-lg">مرحباً، {authUser?.name}</p>
-                <p className="text-white/70 text-sm">سجّل حضورك اليومي بمسح رمز QR</p>
+                <p className="font-bold text-lg">{t('مرحباً،', 'Welcome,')} {authUser?.name}</p>
+                <p className="text-white/70 text-sm">{t('سجّل حضورك اليومي بمسح رمز QR', 'Record your daily attendance by scanning the QR code')}</p>
               </div>
             </div>
           </div>
@@ -256,22 +259,22 @@ export default function AttendancePage() {
                   <FiCheckCircle size={40} className="text-emerald-500" />
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-gray-800">أريج الأقحوان ✅</p>
-                  <p className="text-sm text-emerald-600 font-semibold">تم تسجيل حضورك اليوم</p>
+                  <p className="text-xl font-bold text-gray-800">{t('أريج الأقحوان', 'Areej Al Aqhwan')} ✅</p>
+                  <p className="text-sm text-emerald-600 font-semibold">{t('تم تسجيل حضورك اليوم', 'Your attendance for today is recorded')}</p>
                   <p className="text-sm text-gray-500">
-                    وقت الحضور بتوقيت السعودية: <span dir="ltr" className="font-semibold">{records.find(r => r.workerId === authUser?.id && r.date === today)?.checkInTime}</span>
+                    {t('وقت الحضور بتوقيت السعودية', 'Check-in time (Saudi)')}: <span dir="ltr" className="font-semibold">{records.find(r => r.workerId === authUser?.id && r.date === today)?.checkInTime}</span>
                   </p>
                 </div>
               </div>
             ) : (
               <>
-                <p className="text-gray-500 text-sm text-center">اضغط على الزر لفتح الكاميرا ومسح رمز QR اليومي</p>
+                <p className="text-gray-500 text-sm text-center">{t('اضغط على الزر لفتح الكاميرا ومسح رمز QR اليومي', 'Tap the button to open the camera and scan today’s QR code')}</p>
                 <button
                   onClick={() => setScannerOpen(true)}
                   className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-[#2C3E35] to-[#5B7B6D] text-white rounded-2xl text-lg font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
                 >
                   <FiCamera size={24} />
-                  مسح رمز QR للحضور
+                  {t('مسح رمز QR للحضور', 'Scan QR to check in')}
                 </button>
               </>
             )}
@@ -289,7 +292,7 @@ export default function AttendancePage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-800">{todayCount}</p>
-                <p className="text-xs text-gray-500">حضور اليوم</p>
+                <p className="text-xs text-gray-500">{t('حضور اليوم', 'Today’s attendance')}</p>
               </div>
             </div>
           </div>
@@ -300,7 +303,7 @@ export default function AttendancePage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-800">{qrCount}</p>
-                <p className="text-xs text-gray-500">عبر QR</p>
+                <p className="text-xs text-gray-500">{t('عبر QR', 'Via QR')}</p>
               </div>
             </div>
           </div>
@@ -311,7 +314,7 @@ export default function AttendancePage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-800">{workers.length}</p>
-                <p className="text-xs text-gray-500">إجمالي الموظفين</p>
+                <p className="text-xs text-gray-500">{t('إجمالي الموظفين', 'Total employees')}</p>
               </div>
             </div>
           </div>
@@ -326,9 +329,9 @@ export default function AttendancePage() {
               <div className="bg-gradient-to-r from-[#2C3E35] to-[#5B7B6D] p-5 text-white">
                 <div className="flex items-center gap-2 mb-1">
                   <FiSmartphone size={18} />
-                  <h2 className="font-bold text-base">رمز QR اليومي</h2>
+                  <h2 className="font-bold text-base">{t('رمز QR اليومي', 'Daily QR code')}</h2>
                 </div>
-                <p className="text-xs text-white/70">يتغير يومياً — صالح فقط اليوم</p>
+                <p className="text-xs text-white/70">{t('يتغير يومياً — صالح فقط اليوم', 'Changes daily — valid today only')}</p>
               </div>
               <div className="p-6 flex flex-col items-center">
                 {qrLoading ? (
@@ -338,21 +341,21 @@ export default function AttendancePage() {
                 ) : qrDataUrl ? (
                   <img src={qrDataUrl} alt="Daily QR Code" className="w-[220px] h-[220px] rounded-2xl border-4 border-[#5B7B6D]/10" />
                 ) : (
-                  <div className="w-[200px] h-[200px] flex items-center justify-center bg-gray-50 rounded-2xl text-gray-400 text-sm">فشل التحميل</div>
+                  <div className="w-[200px] h-[200px] flex items-center justify-center bg-gray-50 rounded-2xl text-gray-400 text-sm">{t('فشل التحميل', 'Failed to load')}</div>
                 )}
                 <div className="mt-4 text-center space-y-2 w-full">
                   <div className="bg-gray-50 rounded-xl px-4 py-2.5">
-                    <p className="text-xs text-gray-400 mb-0.5">تاريخ الرمز</p>
+                    <p className="text-xs text-gray-400 mb-0.5">{t('تاريخ الرمز', 'QR date')}</p>
                     <p className="text-sm font-bold text-gray-700" dir="ltr">{today}</p>
                   </div>
                   <button onClick={generateQR} className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#5B7B6D] text-white rounded-xl text-sm font-semibold hover:bg-[#4a6a5c] transition-all">
                     <FiRefreshCw size={14} />
-                    إعادة توليد
+                    {t('إعادة توليد', 'Regenerate')}
                   </button>
                   {qrDataUrl && (
                     <a href={qrDataUrl} download={`qr-attendance-${today}.png`} className="w-full flex items-center justify-center gap-2 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-200 transition-all">
                       <FiDownload size={14} />
-                      تنزيل QR
+                      {t('تنزيل QR', 'Download QR')}
                     </a>
                   )}
                 </div>
@@ -370,7 +373,7 @@ export default function AttendancePage() {
                 <FiSearch size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder={isWorker ? 'بحث في سجلاتي...' : 'بحث باسم الموظف...'}
+                  placeholder={isWorker ? t('بحث في سجلاتي...', 'Search my records...') : t('بحث باسم الموظف...', 'Search by employee name...')}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   className="w-full pr-9 pl-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#5B7B6D]/30 focus:border-[#5B7B6D] outline-none bg-gray-50 focus:bg-white transition-all"
@@ -394,7 +397,7 @@ export default function AttendancePage() {
                       onChange={e => setFilterWorker(e.target.value)}
                       className="pr-9 pl-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#5B7B6D]/30 focus:border-[#5B7B6D] outline-none bg-gray-50 focus:bg-white transition-all appearance-none"
                     >
-                      <option value="">جميع الموظفين</option>
+                      <option value="">{t('جميع الموظفين', 'All employees')}</option>
                       {workers.map(w => <option key={w._id} value={w._id}>{w.name}</option>)}
                     </select>
                   </div>
@@ -412,18 +415,18 @@ export default function AttendancePage() {
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-48 text-gray-400">
                 <FiCalendar size={32} className="mb-3 text-gray-200" />
-                <p className="font-medium">لا توجد سجلات حضور</p>
-                <p className="text-xs mt-1 text-gray-300">{isWorker ? 'لم تسجل حضوراً بعد' : 'سيظهر هنا حضور الموظفين'}</p>
+                <p className="font-medium">{t('لا توجد سجلات حضور', 'No attendance records')}</p>
+                <p className="text-xs mt-1 text-gray-300">{isWorker ? t('لم تسجل حضوراً بعد', 'You haven’t checked in yet') : t('سيظهر هنا حضور الموظفين', 'Employee check-ins will appear here')}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-100">
-                      {!isWorker && <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">الموظف</th>}
-                      <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">التاريخ</th>
-                      <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">وقت الحضور (السعودية)</th>
-                      <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">الطريقة</th>
+                      {!isWorker && <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('الموظف', 'Employee')}</th>}
+                      <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('التاريخ', 'Date')}</th>
+                      <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('وقت الحضور (السعودية)', 'Check-in time (Saudi)')}</th>
+                      <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('الطريقة', 'Method')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -469,7 +472,7 @@ export default function AttendancePage() {
             <div className="bg-gradient-to-r from-[#2C3E35] to-[#5B7B6D] px-5 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2 text-white">
                 <FiCamera size={20} />
-                <span className="font-bold">مسح رمز QR</span>
+                <span className="font-bold">{t('مسح رمز QR', 'Scan QR code')}</span>
               </div>
               <button onClick={closeScanner} className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all">
                 <FiX size={16} />
@@ -482,8 +485,8 @@ export default function AttendancePage() {
                   <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center animate-bounce">
                     <FiCheckCircle size={48} className="text-emerald-500" />
                   </div>
-                  <p className="text-xl font-bold text-gray-800">أريج الأقحوان ✅</p>
-                  <p className="text-sm text-emerald-600 font-semibold text-center">تم تسجيل حضورك بنجاح</p>
+                  <p className="text-xl font-bold text-gray-800">{t('أريج الأقحوان', 'Areej Al Aqhwan')} ✅</p>
+                  <p className="text-sm text-emerald-600 font-semibold text-center">{t('تم تسجيل حضورك بنجاح', 'Your attendance was recorded successfully')}</p>
                 </div>
               ) : scanError ? (
                 <div className="flex flex-col items-center gap-4 py-4 w-full">
@@ -495,7 +498,7 @@ export default function AttendancePage() {
                     onClick={() => { setScanError(''); scannedRef.current = false; startCamera(); }}
                     className="w-full py-3 bg-[#5B7B6D] text-white rounded-xl font-semibold hover:bg-[#4a6a5c] transition-all"
                   >
-                    حاول مرة أخرى
+                    {t('حاول مرة أخرى', 'Try again')}
                   </button>
                 </div>
               ) : (
@@ -527,7 +530,7 @@ export default function AttendancePage() {
                       </div>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500 text-center">وجّه الكاميرا نحو رمز QR اليومي المعروض</p>
+                  <p className="text-sm text-gray-500 text-center">{t('وجّه الكاميرا نحو رمز QR اليومي المعروض', 'Point the camera at today’s QR code on screen')}</p>
                 </>
               )}
             </div>

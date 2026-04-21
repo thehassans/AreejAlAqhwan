@@ -8,6 +8,7 @@ import Link from 'next/link';
 import QRCode from 'qrcode';
 import toast from 'react-hot-toast';
 import { buildInvoiceWhatsAppMessage } from '@/lib/invoiceWhatsApp';
+import { useT } from '@/lib/i18n';
 
 interface InvoiceData {
   _id: string;
@@ -53,6 +54,7 @@ const fmtNum = (n: number) => n.toFixed(2);
 const SAR_CHAR = '\uF0EA';
 
 export default function InvoiceViewPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = useT();
   const { id } = use(params);
   const searchParams = useSearchParams();
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
@@ -140,10 +142,10 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
     if (!inv) return;
 
     try {
-      toast.loading('جاري تجهيز الطباعة الحرارية...', { id: 'thermal-print' });
+      toast.loading(t('جاري تجهيز الطباعة الحرارية...', 'Preparing thermal print...'), { id: 'thermal-print' });
       const canvas = await renderReceiptCanvas(4);
       if (!canvas) {
-        toast.error('تعذر تجهيز الفاتورة للطباعة', { id: 'thermal-print' });
+        toast.error(t('تعذر تجهيز الفاتورة للطباعة', 'Could not prepare invoice for printing'), { id: 'thermal-print' });
         return;
       }
 
@@ -153,7 +155,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
       const w = window.open('', '_blank');
 
       if (!w) {
-        toast.error('تعذر فتح نافذة الطباعة', { id: 'thermal-print' });
+        toast.error(t('تعذر فتح نافذة الطباعة', 'Could not open print window'), { id: 'thermal-print' });
         return;
       }
 
@@ -185,10 +187,10 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
         </html>
       `);
       w.document.close();
-      toast.success('تم تجهيز الطباعة الحرارية', { id: 'thermal-print' });
+      toast.success(t('تم تجهيز الطباعة الحرارية', 'Thermal print ready'), { id: 'thermal-print' });
     } catch (err) {
       console.error('Thermal print error:', err);
-      toast.error('فشل تجهيز الطباعة الحرارية', { id: 'thermal-print' });
+      toast.error(t('فشل تجهيز الطباعة الحرارية', 'Failed to prepare thermal print'), { id: 'thermal-print' });
     }
   }, [renderReceiptCanvas]);
 
@@ -208,7 +210,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
   const handleDownloadPDF = async () => {
     if (!invoice) return;
     try {
-      toast.loading('جاري إنشاء PDF...', { id: 'pdf-dl' });
+      toast.loading(t('جاري إنشاء PDF...', 'Generating PDF...'), { id: 'pdf-dl' });
       const { jsPDF } = await import('jspdf');
       const canvas = await renderReceiptCanvas(4);
       if (!canvas) return;
@@ -217,10 +219,10 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [pdfWidth, Math.max(70, pdfHeight)] });
       pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`invoice-${invoice.invoiceNumber}.pdf`);
-      toast.success('تم تحميل PDF', { id: 'pdf-dl' });
+      toast.success(t('تم تحميل PDF', 'PDF downloaded'), { id: 'pdf-dl' });
     } catch (err) {
       console.error('PDF error:', err);
-      toast.error('فشل إنشاء PDF', { id: 'pdf-dl' });
+      toast.error(t('فشل إنشاء PDF', 'PDF generation failed'), { id: 'pdf-dl' });
     }
   };
 
@@ -250,22 +252,22 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
     <div className="space-y-4 max-w-md mx-auto">
       <div className="flex items-center justify-between">
         <Link href="/admin/dashboard/invoices" className="flex items-center gap-2 text-gray-600 hover:text-gray-800 text-sm">
-          <FiArrowRight size={16} /> العودة للفواتير
+          <FiArrowRight size={16} /> {t('العودة للفواتير', 'Back to invoices')}
         </Link>
         <div className="flex items-center gap-2">
           <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors">
             <FiDownload size={14} /> PDF
           </button>
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors">
-            <FaWhatsapp size={14} /> واتساب
+            <FaWhatsapp size={14} /> {t('واتساب', 'WhatsApp')}
           </a>
           <button onClick={handlePrintFn} className="flex items-center gap-2 px-3 py-2 bg-gray-800 text-white rounded-xl text-sm font-medium hover:bg-gray-700 transition-colors">
-            <FiPrinter size={14} /> طباعة
+            <FiPrinter size={14} /> {t('طباعة', 'Print')}
           </button>
         </div>
       </div>
 
-      <p className="text-xs text-gray-400 text-center">سيتم إرسال هذه الرسالة أيضًا إلى واتساب مع تحميل الفاتورة PDF</p>
+      <p className="text-xs text-gray-400 text-center">{t('سيتم إرسال هذه الرسالة أيضًا إلى واتساب مع تحميل الفاتورة PDF', 'This message will also be sent to WhatsApp along with the invoice PDF')}</p>
 
       {/* Thermal receipt preview - 80mm x 70mm */}
       <div ref={printRef} className="bg-white rounded-xl shadow-sm border mx-auto" style={{ maxWidth: '302px', fontFamily: "'Courier New', monospace" }}>
