@@ -8,12 +8,16 @@ export async function GET() {
   try {
     await dbConnect();
 
-    const existingAdmin = await Admin.findOne({ email: 'admin@areej.com' });
+    const adminName = process.env.ADMIN_NAME || 'Admin';
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@areej.com';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+
+    const existingAdmin = await Admin.findOne({ email: adminEmail });
     if (!existingAdmin) {
-      const hashedPassword = await bcrypt.hash('admin123', 12);
+      const hashedPassword = await bcrypt.hash(adminPassword, 12);
       await Admin.create({
-        name: 'Admin',
-        email: 'admin@areej.com',
+        name: adminName,
+        email: adminEmail,
         password: hashedPassword,
       });
     }

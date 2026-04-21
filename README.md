@@ -50,10 +50,15 @@ A full-stack bilingual (Arabic/English) e-commerce platform for a flower and gif
 - MongoDB instance (local or Atlas)
 
 ### Environment Variables
-Create `.env.local`:
+Copy `.env.example` to `.env.local` and fill in your values:
 ```
 MONGODB_URI=mongodb+srv://your-connection-string
-ADMIN_SECRET=your-secret-key-for-jwt
+JWT_SECRET=your-jwt-secret-key
+
+# Admin seed credentials (used by /api/seed)
+ADMIN_NAME=Admin
+ADMIN_EMAIL=admin@areej.com
+ADMIN_PASSWORD=admin123
 ```
 
 ### Installation
@@ -63,8 +68,12 @@ npm run dev
 ```
 
 ### Seed Admin Account
-Visit `http://localhost:3000/api/seed` to create the default admin:
-- **Username**: `admin`
+Visit `http://localhost:3000/api/seed` to create the admin account using the
+values from your `.env.local` (`ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`).
+
+Defaults if not set:
+- **Name**: `Admin`
+- **Email**: `admin@areej.com`
 - **Password**: `admin123`
 
 Change the password after first login.
@@ -97,7 +106,10 @@ Replace `public/logo.png` with your actual store logo.
 In Plesk Node.js settings, add:
 ```
 MONGODB_URI=your-mongodb-uri
-ADMIN_SECRET=your-secret-key
+JWT_SECRET=your-jwt-secret-key
+ADMIN_NAME=Admin
+ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_PASSWORD=your-strong-password
 NODE_ENV=production
 ```
 
