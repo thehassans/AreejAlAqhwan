@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FiCamera, FiCheckCircle, FiCalendar, FiClock, FiTrendingUp } from 'react-icons/fi';
+import { useT, useLocale } from '@/lib/i18n';
 
 interface AttendanceRecord {
   _id: string;
@@ -18,13 +19,15 @@ interface WorkerInfo {
 }
 
 export default function WorkerDashboardHome() {
+  const t = useT();
+  const { lang } = useLocale();
   const [worker, setWorker] = useState<WorkerInfo | null>(null);
   const [myAttendance, setMyAttendance] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [todayMarked, setTodayMarked] = useState(false);
 
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Riyadh' }).format(new Date());
-  const todayAr = new Date().toLocaleDateString('ar-SA', {
+  const todayAr = new Date().toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     timeZone: 'Asia/Riyadh',
   });
@@ -69,7 +72,7 @@ export default function WorkerDashboardHome() {
       <div className="bg-gradient-to-r from-[#2C3E35] to-[#5B7B6D] rounded-2xl p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-white/70 text-sm">مرحباً بعودتك 🌸</p>
+            <p className="text-white/70 text-sm">{t('مرحباً بعودتك 🌸', 'Welcome back 🌸')}</p>
             <h1 className="text-xl font-bold mt-0.5">{worker?.name}</h1>
             <p className="text-white/60 text-xs mt-1">{todayAr}</p>
           </div>
@@ -82,17 +85,17 @@ export default function WorkerDashboardHome() {
           {todayMarked ? (
             <div className="flex items-center gap-2 text-emerald-300 text-sm font-medium">
               <FiCheckCircle size={16} />
-              تم تسجيل حضورك اليوم بنجاح
+              {t('تم تسجيل حضورك اليوم بنجاح', 'You are checked in for today')}
             </div>
           ) : (
             <div className="flex items-center justify-between">
-              <span className="text-white/70 text-sm">لم يتم تسجيل حضورك اليوم</span>
+              <span className="text-white/70 text-sm">{t('لم يتم تسجيل حضورك اليوم', 'Not checked in yet today')}</span>
               <Link
                 href="/worker/dashboard/scan"
                 className="flex items-center gap-1.5 px-4 py-2 bg-white text-[#2C3E35] rounded-xl text-sm font-bold hover:bg-white/90 transition-all"
               >
                 <FiCamera size={15} />
-                سجّل الآن
+                {t('سجّل الآن', 'Check in now')}
               </Link>
             </div>
           )}
@@ -106,7 +109,7 @@ export default function WorkerDashboardHome() {
             <FiCheckCircle size={20} className="text-emerald-600" />
           </div>
           <p className="text-xl font-bold text-gray-800">{myAttendance.length}</p>
-          <p className="text-xs text-gray-400 mt-0.5">إجمالي الحضور</p>
+          <p className="text-xs text-gray-400 mt-0.5">{t('إجمالي الحضور', 'Total check-ins')}</p>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
           <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-2">
@@ -115,7 +118,7 @@ export default function WorkerDashboardHome() {
           <p className="text-xl font-bold text-gray-800">
             {myAttendance.filter(a => a.method === 'qr').length}
           </p>
-          <p className="text-xs text-gray-400 mt-0.5">عبر QR</p>
+          <p className="text-xs text-gray-400 mt-0.5">{t('عبر QR', 'Via QR')}</p>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
           <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-2">
@@ -124,7 +127,7 @@ export default function WorkerDashboardHome() {
           <p className="text-xl font-bold text-gray-800">
             {worker?.pageAccess?.length || 0}
           </p>
-          <p className="text-xs text-gray-400 mt-0.5">صلاحيات</p>
+          <p className="text-xs text-gray-400 mt-0.5">{t('صلاحيات', 'Permissions')}</p>
         </div>
       </div>
 
@@ -137,21 +140,21 @@ export default function WorkerDashboardHome() {
           <div className="w-16 h-16 bg-emerald-50 group-hover:bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-colors">
             <FiCamera size={28} className="text-emerald-600" />
           </div>
-          <p className="font-bold text-gray-800 text-base">امسح QR لتسجيل الحضور</p>
-          <p className="text-sm text-gray-400 mt-1">اضغط هنا لفتح الكاميرا ومسح رمز الحضور اليومي</p>
+          <p className="font-bold text-gray-800 text-base">{t('امسح QR لتسجيل الحضور', 'Scan QR to check in')}</p>
+          <p className="text-sm text-gray-400 mt-1">{t('اضغط هنا لفتح الكاميرا ومسح رمز الحضور اليومي', 'Tap here to open the camera and scan today\'s attendance QR')}</p>
         </Link>
       )}
 
       {/* Recent Attendance */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b flex items-center justify-between">
-          <h2 className="font-bold text-gray-800">سجل الحضور الأخير</h2>
-          <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">{myAttendance.length} سجل</span>
+          <h2 className="font-bold text-gray-800">{t('سجل الحضور الأخير', 'Recent attendance')}</h2>
+          <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">{myAttendance.length} {t('سجل', 'records')}</span>
         </div>
         {myAttendance.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-gray-400">
             <FiCalendar size={32} className="mb-3 text-gray-200" />
-            <p className="text-sm">لا توجد سجلات حضور بعد</p>
+            <p className="text-sm">{t('لا توجد سجلات حضور بعد', 'No attendance records yet')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
@@ -164,7 +167,7 @@ export default function WorkerDashboardHome() {
                   <div>
                     <p className="text-sm font-semibold text-gray-800" dir="ltr">{fmtDate(record.date)}</p>
                     {record.date === today && (
-                      <span className="text-xs text-emerald-600 font-medium">اليوم ✓</span>
+                      <span className="text-xs text-emerald-600 font-medium">{t('اليوم ✓', 'Today ✓')}</span>
                     )}
                   </div>
                 </div>

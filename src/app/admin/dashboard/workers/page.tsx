@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FiPlus, FiEdit2, FiTrash2, FiX, FiCheck, FiUser, FiPhone, FiMail, FiLock, FiShield, FiUserCheck, FiToggleLeft, FiToggleRight } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
 
 interface Worker {
   _id: string;
@@ -14,17 +15,18 @@ interface Worker {
   createdAt: string;
 }
 
-const ALL_PAGES = [
-  { key: 'invoices', label: 'الفواتير', icon: '🧾' },
-  { key: 'products', label: 'المنتجات', icon: '📦' },
-  { key: 'orders', label: 'الطلبات', icon: '🛒' },
-  { key: 'customers', label: 'العملاء', icon: '👥' },
-  { key: 'settings', label: 'الإعدادات', icon: '⚙️' },
+const ALL_PAGES: { key: string; labelAr: string; labelEn: string; icon: string }[] = [
+  { key: 'invoices', labelAr: 'الفواتير', labelEn: 'Invoices', icon: '🧾' },
+  { key: 'products', labelAr: 'المنتجات', labelEn: 'Products', icon: '📦' },
+  { key: 'orders', labelAr: 'الطلبات', labelEn: 'Orders', icon: '🛒' },
+  { key: 'customers', labelAr: 'العملاء', labelEn: 'Customers', icon: '👥' },
+  { key: 'settings', labelAr: 'الإعدادات', labelEn: 'Settings', icon: '⚙️' },
 ];
 
 const emptyForm = { name: '', phone: '', email: '', password: '', pageAccess: [] as string[], isActive: true };
 
 export default function WorkersPage() {
+  const t = useT();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -59,11 +61,11 @@ export default function WorkersPage() {
 
   const handleSave = async () => {
     if (!form.name.trim() || !form.phone.trim() || !form.email.trim()) {
-      toast.error('يرجى ملء جميع الحقول المطلوبة');
+      toast.error(t('يرجى ملء جميع الحقول المطلوبة', 'Please fill all required fields'));
       return;
     }
     if (!editingWorker && !form.password.trim()) {
-      toast.error('يرجى إدخال كلمة المرور');
+      toast.error(t('يرجى إدخال كلمة المرور', 'Please enter a password'));
       return;
     }
     setSaving(true);
@@ -77,24 +79,24 @@ export default function WorkersPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success(editingWorker ? 'تم تحديث الموظف' : 'تم إضافة الموظف بنجاح');
+        toast.success(editingWorker ? t('تم تحديث الموظف', 'Employee updated') : t('تم إضافة الموظف بنجاح', 'Employee added successfully'));
         setModalOpen(false);
         fetchWorkers();
       } else {
-        toast.error(data.error || 'فشل الحفظ');
+        toast.error(data.error || t('فشل الحفظ', 'Save failed'));
       }
     } catch {
-      toast.error('حدث خطأ');
+      toast.error(t('حدث خطأ', 'An error occurred'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذا الموظف؟')) return;
+    if (!confirm(t('هل أنت متأكد من حذف هذا الموظف؟', 'Delete this employee?'))) return;
     const res = await fetch(`/api/workers/${id}`, { method: 'DELETE' });
-    if (res.ok) { toast.success('تم حذف الموظف'); fetchWorkers(); }
-    else toast.error('فشل الحذف');
+    if (res.ok) { toast.success(t('تم حذف الموظف', 'Employee deleted')); fetchWorkers(); }
+    else toast.error(t('فشل الحذف', 'Delete failed'));
   };
 
   if (loading) {
@@ -110,15 +112,15 @@ export default function WorkersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">إدارة الموظفين</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{workers.length} موظف مسجل</p>
+          <h1 className="text-2xl font-bold text-gray-800">{t('إدارة الموظفين', 'Employees')}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{workers.length} {t('موظف مسجل', 'registered employee(s)')}</p>
         </div>
         <button
           onClick={openCreate}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#5B7B6D] text-white rounded-xl text-sm font-semibold hover:bg-[#4a6a5c] transition-all shadow-lg shadow-[#5B7B6D]/25 active:scale-95"
         >
           <FiPlus size={18} />
-          إضافة موظف
+          {t('إضافة موظف', 'Add employee')}
         </button>
       </div>
 
@@ -131,7 +133,7 @@ export default function WorkersPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-800">{workers.filter(w => w.isActive).length}</p>
-              <p className="text-xs text-gray-500">موظف نشط</p>
+              <p className="text-xs text-gray-500">{t('موظف نشط', 'Active')}</p>
             </div>
           </div>
         </div>
@@ -142,7 +144,7 @@ export default function WorkersPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-800">{workers.filter(w => !w.isActive).length}</p>
-              <p className="text-xs text-gray-500">موظف غير نشط</p>
+              <p className="text-xs text-gray-500">{t('موظف غير نشط', 'Inactive')}</p>
             </div>
           </div>
         </div>
@@ -153,7 +155,7 @@ export default function WorkersPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-800">{workers.length}</p>
-              <p className="text-xs text-gray-500">إجمالي الموظفين</p>
+              <p className="text-xs text-gray-500">{t('إجمالي الموظفين', 'Total employees')}</p>
             </div>
           </div>
         </div>
@@ -165,8 +167,8 @@ export default function WorkersPage() {
           <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <FiUser size={28} className="text-gray-300" />
           </div>
-          <p className="text-gray-400 font-medium">لا يوجد موظفون بعد</p>
-          <p className="text-gray-300 text-sm mt-1">اضغط على "إضافة موظف" للبدء</p>
+          <p className="text-gray-400 font-medium">{t('لا يوجد موظفون بعد', 'No employees yet')}</p>
+          <p className="text-gray-300 text-sm mt-1">{t('اضغط على "إضافة موظف" للبدء', 'Click "Add employee" to begin')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -183,7 +185,7 @@ export default function WorkersPage() {
                       <p className="text-white font-bold">{worker.name}</p>
                       <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium mt-0.5 ${worker.isActive ? 'bg-emerald-400/30 text-emerald-100' : 'bg-gray-400/30 text-gray-200'}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${worker.isActive ? 'bg-emerald-300' : 'bg-gray-400'}`} />
-                        {worker.isActive ? 'نشط' : 'غير نشط'}
+                        {worker.isActive ? t('نشط', 'Active') : t('غير نشط', 'Inactive')}
                       </span>
                     </div>
                   </div>
@@ -191,14 +193,14 @@ export default function WorkersPage() {
                     <button
                       onClick={() => openEdit(worker)}
                       className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition-colors"
-                      title="تعديل"
+                      title={t('تعديل', 'Edit')}
                     >
                       <FiEdit2 size={14} className="text-white" />
                     </button>
                     <button
                       onClick={() => handleDelete(worker._id)}
                       className="w-8 h-8 bg-red-400/30 hover:bg-red-400/50 rounded-lg flex items-center justify-center transition-colors"
-                      title="حذف"
+                      title={t('حذف', 'Delete')}
                     >
                       <FiTrash2 size={14} className="text-red-200" />
                     </button>
@@ -221,16 +223,16 @@ export default function WorkersPage() {
 
                 {/* Page Access Badges */}
                 <div>
-                  <p className="text-xs text-gray-400 mb-1.5 font-medium">صلاحيات الوصول</p>
+                  <p className="text-xs text-gray-400 mb-1.5 font-medium">{t('صلاحيات الوصول', 'Access permissions')}</p>
                   <div className="flex flex-wrap gap-1">
                     {(worker.pageAccess || []).length === 0 ? (
-                      <span className="text-xs text-gray-300 italic">لا توجد صلاحيات</span>
+                      <span className="text-xs text-gray-300 italic">{t('لا توجد صلاحيات', 'No permissions')}</span>
                     ) : (
                       (worker.pageAccess || []).map(p => {
                         const page = ALL_PAGES.find(pg => pg.key === p);
                         return (
                           <span key={p} className="text-xs bg-[#5B7B6D]/10 text-[#5B7B6D] px-2 py-0.5 rounded-lg font-medium">
-                            {page?.icon} {page?.label}
+                            {page?.icon} {page ? t(page.labelAr, page.labelEn) : ''}
                           </span>
                         );
                       })
@@ -238,7 +240,7 @@ export default function WorkersPage() {
                   </div>
                 </div>
                 <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-center text-sm font-semibold text-emerald-700">
-                  الحضور يتم فقط عبر مسح رمز QR
+                  {t('الحضور يتم فقط عبر مسح رمز QR', 'Attendance is recorded via QR scan only')}
                 </div>
               </div>
             </div>
@@ -254,8 +256,8 @@ export default function WorkersPage() {
             {/* Modal Header */}
             <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
               <div>
-                <h2 className="text-lg font-bold text-gray-800">{editingWorker ? 'تعديل الموظف' : 'إضافة موظف جديد'}</h2>
-                <p className="text-xs text-gray-400 mt-0.5">{editingWorker ? 'تحديث بيانات الموظف' : 'أدخل بيانات الموظف الجديد'}</p>
+                <h2 className="text-lg font-bold text-gray-800">{editingWorker ? t('تعديل الموظف', 'Edit employee') : t('إضافة موظف جديد', 'Add new employee')}</h2>
+                <p className="text-xs text-gray-400 mt-0.5">{editingWorker ? t('تحديث بيانات الموظف', 'Update employee data') : t('أدخل بيانات الموظف الجديد', 'Enter new employee details')}</p>
               </div>
               <button onClick={() => setModalOpen(false)} className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-colors">
                 <FiX size={16} />
@@ -267,13 +269,13 @@ export default function WorkersPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   <FiUser size={13} className="inline ml-1" />
-                  الاسم الكامل *
+                  {t('الاسم الكامل', 'Full name')} *
                 </label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="اسم الموظف"
+                  placeholder={t('اسم الموظف', 'Employee name')}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#5B7B6D]/30 focus:border-[#5B7B6D] outline-none text-sm bg-gray-50 focus:bg-white transition-all"
                 />
               </div>
@@ -282,7 +284,7 @@ export default function WorkersPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   <FiPhone size={13} className="inline ml-1" />
-                  رقم الجوال *
+                  {t('رقم الجوال', 'Phone')} *
                 </label>
                 <input
                   type="tel"
@@ -298,7 +300,7 @@ export default function WorkersPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   <FiMail size={13} className="inline ml-1" />
-                  البريد الإلكتروني *
+                  {t('البريد الإلكتروني', 'Email')} *
                 </label>
                 <input
                   type="email"
@@ -314,7 +316,7 @@ export default function WorkersPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   <FiLock size={13} className="inline ml-1" />
-                  كلمة المرور {editingWorker && <span className="text-gray-400 font-normal">(اتركها فارغة للإبقاء على الحالية)</span>}
+                  {t('كلمة المرور', 'Password')} {editingWorker && <span className="text-gray-400 font-normal">{t('(اتركها فارغة للإبقاء على الحالية)', '(leave empty to keep current)')}</span>}
                 </label>
                 <input
                   type="password"
@@ -330,7 +332,7 @@ export default function WorkersPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
                   <FiShield size={13} className="inline ml-1" />
-                  صلاحيات الوصول للصفحات
+                  {t('صلاحيات الوصول للصفحات', 'Page access permissions')}
                 </label>
                 <div className="space-y-2">
                   {ALL_PAGES.map(page => (
@@ -346,7 +348,7 @@ export default function WorkersPage() {
                     >
                       <span className="flex items-center gap-2">
                         <span>{page.icon}</span>
-                        <span>{page.label}</span>
+                        <span>{t(page.labelAr, page.labelEn)}</span>
                       </span>
                       <span className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all ${
                         form.pageAccess.includes(page.key) ? 'border-[#5B7B6D] bg-[#5B7B6D]' : 'border-gray-300'
@@ -361,8 +363,8 @@ export default function WorkersPage() {
               {/* Active Toggle */}
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                 <div>
-                  <p className="text-sm font-semibold text-gray-700">حالة الموظف</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{form.isActive ? 'الموظف نشط ويمكنه تسجيل الدخول' : 'الموظف غير نشط'}</p>
+                  <p className="text-sm font-semibold text-gray-700">{t('حالة الموظف', 'Employee status')}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{form.isActive ? t('الموظف نشط ويمكنه تسجيل الدخول', 'Employee is active and can sign in') : t('الموظف غير نشط', 'Employee is inactive')}</p>
                 </div>
                 <button
                   type="button"
@@ -370,7 +372,7 @@ export default function WorkersPage() {
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-all ${form.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'}`}
                 >
                   {form.isActive ? <FiToggleRight size={20} /> : <FiToggleLeft size={20} />}
-                  {form.isActive ? 'نشط' : 'غير نشط'}
+                  {form.isActive ? t('نشط', 'Active') : t('غير نشط', 'Inactive')}
                 </button>
               </div>
             </div>
@@ -382,13 +384,13 @@ export default function WorkersPage() {
                 disabled={saving}
                 className="flex-1 py-3 bg-[#5B7B6D] text-white rounded-xl font-semibold text-sm hover:bg-[#4a6a5c] transition-all disabled:opacity-50 shadow-lg shadow-[#5B7B6D]/25"
               >
-                {saving ? 'جاري الحفظ...' : editingWorker ? 'حفظ التغييرات' : 'إضافة الموظف'}
+                {saving ? t('جاري الحفظ...', 'Saving...') : editingWorker ? t('حفظ التغييرات', 'Save changes') : t('إضافة الموظف', 'Add employee')}
               </button>
               <button
                 onClick={() => setModalOpen(false)}
                 className="px-6 py-3 bg-gray-100 text-gray-600 rounded-xl font-semibold text-sm hover:bg-gray-200 transition-all"
               >
-                إلغاء
+                {t('إلغاء', 'Cancel')}
               </button>
             </div>
           </div>

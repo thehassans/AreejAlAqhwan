@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useT } from '@/lib/i18n';
 
 export default function WorkerLoginPage() {
   const [email, setEmail] = useState('');
@@ -12,6 +14,7 @@ export default function WorkerLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const t = useT();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,22 +27,23 @@ export default function WorkerLoginPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success(`أهلاً ${data.worker.name} 👋`);
+        toast.success(t(`أهلاً ${data.worker.name} 👋`, `Welcome ${data.worker.name} 👋`));
         router.push('/worker/dashboard');
       } else {
-        toast.error(data.error || 'فشل تسجيل الدخول');
+        toast.error(data.error || t('فشل تسجيل الدخول', 'Sign-in failed'));
       }
     } catch {
-      toast.error('حدث خطأ في الاتصال');
+      toast.error(t('حدث خطأ في الاتصال', 'Connection error'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#2C3E35] via-[#3d5a4e] to-[#5B7B6D] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#2C3E35] via-[#3d5a4e] to-[#5B7B6D] flex items-center justify-center px-4 relative">
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
+      <div className="absolute top-4 right-4 z-10"><LanguageSwitcher variant="dark" /></div>
 
       <div className="relative w-full max-w-sm">
         {/* Card */}
@@ -49,14 +53,14 @@ export default function WorkerLoginPage() {
             <div className="w-20 h-20 rounded-2xl overflow-hidden mx-auto mb-4 shadow-lg ring-4 ring-[#5B7B6D]/10">
               <Image src="/logo.png" alt="Logo" width={80} height={80} className="object-cover w-full h-full" unoptimized />
             </div>
-            <h1 className="text-xl font-bold text-gray-800">لوحة الموظف</h1>
-            <p className="text-sm text-gray-400 mt-1">أريج الأقحوان</p>
+            <h1 className="text-xl font-bold text-gray-800">{t('لوحة الموظف', 'Employee Panel')}</h1>
+            <p className="text-sm text-gray-400 mt-1">{t('أريج الأقحوان', 'Areej Al Aqhwan')}</p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1.5">البريد الإلكتروني</label>
+              <label className="block text-sm font-semibold text-gray-600 mb-1.5">{t('البريد الإلكتروني', 'Email')}</label>
               <div className="relative">
                 <FiMail size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -72,7 +76,7 @@ export default function WorkerLoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1.5">كلمة المرور</label>
+              <label className="block text-sm font-semibold text-gray-600 mb-1.5">{t('كلمة المرور', 'Password')}</label>
               <div className="relative">
                 <FiLock size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -88,7 +92,7 @@ export default function WorkerLoginPage() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  aria-label={showPassword ? 'إخفاء' : 'إظهار'}
+                  aria-label={showPassword ? t('إخفاء', 'Hide') : t('إظهار', 'Show')}
                 >
                   {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
                 </button>
@@ -103,21 +107,21 @@ export default function WorkerLoginPage() {
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-                  جاري الدخول...
+                  {t('جاري الدخول...', 'Signing in...')}
                 </span>
-              ) : 'تسجيل الدخول'}
+              ) : t('تسجيل الدخول', 'Sign in')}
             </button>
           </form>
 
           <p className="text-center text-xs text-gray-400 mt-6">
-            لوحة تحكم الموظفين — أريج الأقحوان 🌸
+            {t('لوحة تحكم الموظفين — أريج الأقحوان 🌸', 'Employee Panel — Areej Al Aqhwan 🌸')}
           </p>
         </div>
 
         {/* Admin link */}
         <p className="text-center mt-4">
           <a href="/admin" className="text-white/60 text-xs hover:text-white transition-colors">
-            تسجيل دخول المسؤول ←
+            {t('تسجيل دخول المسؤول ←', 'Admin sign-in ←')}
           </a>
         </p>
       </div>
