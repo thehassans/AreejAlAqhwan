@@ -195,42 +195,98 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
     }
   }, [renderReceiptCanvas]);
 
-  // Compute WhatsApp URL as derived value so it can be used directly in an <a> href
-  const whatsappUrl = useMemo(() => {
-    if (!invoice) return '#';
+  // Build the fully-formatted WhatsApp message for this invoice
+  const buildWaMessage = useCallback(() => {
+    if (!invoice) return '';
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const invoiceLink = invoice._id ? `${origin}/invoice/${invoice._id}` : '';
-    const waMessage = buildInvoiceWhatsAppMessage({ ...invoice, invoiceLink }, settings || undefined);
-    const phone = toSaIntl(invoice.customerPhone || '');
-    return phone
-      ? `https://wa.me/${phone}?text=${encodeURIComponent(waMessage)}`
-      : `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
+    return buildInvoiceWhatsAppMessage({ ...invoice, invoiceLink }, settings || undefined);
   }, [invoice, settings]);
 
-  // When admin clicks WhatsApp also download PDF locally so they can attach it manually if desired
-  const handleWhatsAppClick = async () => {
-    await handleDownloadPDF();
-  };
+  const buildWaUrl = useCallback(() => {
+    if (!invoice) return '#';
+    const phone = toSaIntl(invoice.customerPhone || '');
+    const msg = buildWaMessage();
+    return phone
+      ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
+      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  }, [invoice, buildWaMessage]);
+
+  // Generate a PDF blob from the rendered receipt
+  const generatePdfBlob = useCallback(async (): Promise<{ blob: Blob; filename: string } | null> => {
+    const inv = invoiceRef.current || invoice;
+    if (!inv) return null;
+    const { jsPDF } = await import('jspdf');
+    const canvas = await renderReceiptCanvas(4);
+    if (!canvas) return null;
+    const pdfWidth = 80;
+    const pdfHeight = (canvas.height / canvas.width) * pdfWidth;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [pdfWidth, Math.max(70, pdfHeight)] });
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
+    const blob = pdf.output('blob');
+    return { blob, filename: `invoice-${inv.invoiceNumber}.pdf` };
+  }, [invoice, renderReceiptCanvas]);
 
   // Download PDF only
   const handleDownloadPDF = async () => {
     if (!invoice) return;
     try {
       toast.loading(t('جاري إنشاء PDF...', 'Generating PDF...'), { id: 'pdf-dl' });
-      const { jsPDF } = await import('jspdf');
-      const canvas = await renderReceiptCanvas(4);
-      if (!canvas) return;
-      const pdfWidth = 80;
-      const pdfHeight = (canvas.height / canvas.width) * pdfWidth;
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [pdfWidth, Math.max(70, pdfHeight)] });
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`invoice-${invoice.invoiceNumber}.pdf`);
+      const out = await generatePdfBlob();
+      if (!out) throw new Error('pdf gen failed');
+      const url = URL.createObjectURL(out.blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = out.filename; document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
       toast.success(t('تم تحميل PDF', 'PDF downloaded'), { id: 'pdf-dl' });
     } catch (err) {
       console.error('PDF error:', err);
       toast.error(t('فشل إنشاء PDF', 'PDF generation failed'), { id: 'pdf-dl' });
     }
   };
+
+  // Share invoice via WhatsApp. Uses Web Share API with PDF attachment when available
+  // (mobile -> WhatsApp receives the PDF as a document). Falls back to wa.me URL +
+  // auto-downloading the PDF so the admin can drag-drop it into WhatsApp Web.
+  const handleWhatsAppShare = useCallback(async () => {
+    if (!invoice) return;
+    try {
+      toast.loading(t('جاري تجهيز الفاتورة...', 'Preparing invoice...'), { id: 'wa-share' });
+      const pdfOut = await generatePdfBlob();
+      const message = buildWaMessage();
+      toast.dismiss('wa-share');
+
+      // 1) Native share with file (mobile / supported desktops) - attaches PDF to WhatsApp
+      if (pdfOut && typeof navigator !== 'undefined' && 'canShare' in navigator) {
+        const file = new File([pdfOut.blob], pdfOut.filename, { type: 'application/pdf' });
+        try {
+          if (navigator.canShare?.({ files: [file] })) {
+            await navigator.share({ files: [file], text: message, title: `Invoice ${invoice.invoiceNumber}` });
+            toast.success(t('تم المشاركة', 'Shared'));
+            return;
+          }
+        } catch (shareErr) {
+          const err = shareErr as { name?: string };
+          if (err?.name === 'AbortError') return; // user cancelled
+          console.warn('navigator.share failed, falling back:', shareErr);
+        }
+      }
+
+      // 2) Desktop fallback: download PDF locally + open wa.me in a new tab
+      if (pdfOut) {
+        const url = URL.createObjectURL(pdfOut.blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = pdfOut.filename; document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+      }
+      window.open(buildWaUrl(), '_blank', 'noopener,noreferrer');
+      toast.success(t('تم تحميل PDF. اسحبه إلى محادثة الواتساب لإرفاقه', 'PDF downloaded — drop it into the WhatsApp chat that just opened.'), { id: 'wa-share', duration: 6000 });
+    } catch (err) {
+      console.error('WhatsApp share error:', err);
+      toast.error(t('فشل المشاركة', 'Share failed'), { id: 'wa-share' });
+      window.open(buildWaUrl(), '_blank', 'noopener,noreferrer');
+    }
+  }, [invoice, generatePdfBlob, buildWaMessage, buildWaUrl, t]);
 
   useEffect(() => {
     Promise.all([
@@ -245,8 +301,12 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
       if (searchParams.get('print') === 'true') {
         setTimeout(() => handlePrintFn(), 800);
       }
+      if (searchParams.get('share') === 'whatsapp') {
+        // Wait for the receipt DOM, logo and QR to finish rendering before snapshotting the PDF
+        setTimeout(() => handleWhatsAppShare(), 1200);
+      }
     }).catch(() => setLoading(false));
-  }, [id, searchParams, handlePrintFn]);
+  }, [id, searchParams, handlePrintFn, handleWhatsAppShare]);
 
   if (loading || !invoice) {
     return <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-[#5B7B6D] border-t-transparent rounded-full" /></div>;
@@ -264,9 +324,9 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
           <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors">
             <FiDownload size={14} /> PDF
           </button>
-          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" onClick={handleWhatsAppClick} className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors">
+          <button onClick={handleWhatsAppShare} className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors">
             <FaWhatsapp size={14} /> {t('واتساب', 'WhatsApp')}
-          </a>
+          </button>
           <button onClick={handlePrintFn} className="flex items-center gap-2 px-3 py-2 bg-gray-800 text-white rounded-xl text-sm font-medium hover:bg-gray-700 transition-colors">
             <FiPrinter size={14} /> {t('طباعة', 'Print')}
           </button>

@@ -6,7 +6,6 @@ import { FiPlus, FiTrash2, FiPrinter, FiSearch, FiX, FiChevronDown, FiChevronUp,
 import { FaWhatsapp } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import SarIcon from '@/components/SarIcon';
-import { buildInvoiceWhatsAppMessage } from '@/lib/invoiceWhatsApp';
 import { useT } from '@/lib/i18n';
 import { normalizeSaLocal, toSaIntl } from '@/lib/phone';
 
@@ -231,12 +230,6 @@ export default function CreateInvoicePage() {
     const phoneLocal = normalizeSaLocal(customerPhone);
     if (andWhatsapp && phoneLocal.length < 9) { toast.error(t('يرجى إدخال رقم جوال العميل لإرسال الفاتورة عبر واتساب', 'Please enter customer phone to send invoice via WhatsApp')); return; }
 
-    // Pre-open a tab synchronously so the browser does not block it after the await.
-    let waWindow: Window | null = null;
-    if (andWhatsapp) {
-      waWindow = window.open('about:blank', '_blank', 'noopener,noreferrer');
-    }
-
     setSaving(true);
     try {
       const normalizedItems = items.map((i) => ({ ...i, total: lineTotal(i) }));
@@ -254,45 +247,19 @@ export default function CreateInvoicePage() {
         const inv = await res.json();
         toast.success(t('تم إنشاء الفاتورة بنجاح', 'Invoice created successfully'));
         if (andWhatsapp) {
-          const invoiceLink = inv?._id ? `${window.location.origin}/invoice/${inv._id}` : '';
-          const message = buildInvoiceWhatsAppMessage(
-            {
-              customerName: inv.customerName || customerName,
-              invoiceNumber: inv.invoiceNumber || invoiceNumber,
-              createdAt: inv.createdAt || new Date().toISOString(),
-              total: inv.total ?? total,
-              subtotal: inv.subtotal ?? subtotal,
-              discount: inv.discount ?? discount,
-              discountType: inv.discountType ?? discountType,
-              vat: inv.vat ?? (settings?.vatPercentage || 0),
-              vatAmount: inv.vatAmount ?? vatAmount,
-              items: (inv.items ?? normalizedItems) as InvoiceItem[],
-              invoiceLink,
-            },
-            settings || undefined,
-          );
-          const phone = toSaIntl(inv.customerPhone || customerPhone);
-          const waUrl = phone
-            ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
-            : `https://wa.me/?text=${encodeURIComponent(message)}`;
-          if (waWindow && !waWindow.closed) {
-            waWindow.location.href = waUrl;
-          } else {
-            window.open(waUrl, '_blank', 'noopener,noreferrer');
-          }
-          // Navigate admin to the invoice detail page so they can quickly attach the PDF in WhatsApp if needed
-          router.push(`/admin/dashboard/invoices/${inv._id}`);
+          // Jump to the detail page which renders the receipt, builds the PDF, and
+          // invokes Web Share API (mobile -> WhatsApp gets the PDF attachment) or
+          // downloads the PDF + opens wa.me on desktop.
+          router.push(`/admin/dashboard/invoices/${inv._id}?share=whatsapp`);
         } else if (andPrint) {
           router.push(`/admin/dashboard/invoices/${inv._id}?print=true`);
         } else {
           router.push('/admin/dashboard/invoices');
         }
       } else {
-        if (waWindow && !waWindow.closed) waWindow.close();
         toast.error(t('فشل إنشاء الفاتورة', 'Failed to create invoice'));
       }
     } catch {
-      if (waWindow && !waWindow.closed) waWindow.close();
       toast.error(t('حدث خطأ', 'An error occurred'));
     } finally {
       setSaving(false);
