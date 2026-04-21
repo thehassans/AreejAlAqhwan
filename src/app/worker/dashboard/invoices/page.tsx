@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FiFileText, FiEye, FiSearch } from 'react-icons/fi';
 import SarIcon from '@/components/SarIcon';
+import { useT } from '@/lib/i18n';
 
 interface Invoice {
   _id: string;
@@ -20,6 +21,7 @@ const fmtDate = (d: string) => {
 };
 
 export default function WorkerInvoicesPage() {
+  const t = useT();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -39,19 +41,19 @@ export default function WorkerInvoicesPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-800">الفواتير</h1>
-          <p className="text-sm text-gray-400 mt-0.5">{invoices.length} فاتورة</p>
+          <h1 className="text-xl font-bold text-gray-800">{t('الفواتير', 'Invoices')}</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{invoices.length} {t('فاتورة', 'invoice(s)')}</p>
         </div>
       </div>
       <div className="relative">
         <FiSearch size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input type="text" placeholder="بحث بالاسم أو رقم الفاتورة..." value={search} onChange={e => setSearch(e.target.value)}
+        <input type="text" placeholder={t('بحث بالاسم أو رقم الفاتورة...', 'Search by name or invoice #...')} value={search} onChange={e => setSearch(e.target.value)}
           className="w-full pr-9 pl-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#5B7B6D]/30 focus:border-[#5B7B6D] outline-none bg-gray-50 focus:bg-white transition-all" />
       </div>
       {filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center text-gray-400">
           <FiFileText size={32} className="mx-auto mb-3 text-gray-200" />
-          <p>لا توجد فواتير</p>
+          <p>{t('لا توجد فواتير', 'No invoices')}</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -59,11 +61,11 @@ export default function WorkerInvoicesPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">رقم الفاتورة</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">العميل</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">المجموع</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">التاريخ</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">عرض</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">{t('رقم الفاتورة', 'Invoice #')}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">{t('العميل', 'Customer')}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">{t('المجموع', 'Total')}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">{t('التاريخ', 'Date')}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">{t('عرض', 'View')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -76,7 +78,7 @@ export default function WorkerInvoicesPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">{fmtDate(inv.createdAt)}</td>
                     <td className="px-4 py-3">
-                      <Link href={`/admin/dashboard/invoices/${inv._id}`} target="_blank" className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg inline-flex" title="عرض الفاتورة">
+                      <Link href={`/admin/dashboard/invoices/${inv._id}`} target="_blank" className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg inline-flex" title={t('عرض الفاتورة', 'View invoice')}>
                         <FiEye size={15} />
                       </Link>
                     </td>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { FiUsers, FiSearch, FiPhone, FiMail } from 'react-icons/fi';
 import SarIcon from '@/components/SarIcon';
+import { useT } from '@/lib/i18n';
 
 interface Customer {
   _id: string;
@@ -22,8 +23,15 @@ const tierColors: Record<string, string> = {
   platinum: 'bg-purple-50 text-purple-700',
 };
 const tierEmoji: Record<string, string> = { bronze: '🥉', silver: '🥈', gold: '🥇', platinum: '💎' };
+const tierLabelsMap: Record<string, { ar: string; en: string }> = {
+  bronze: { ar: 'برونزي', en: 'Bronze' },
+  silver: { ar: 'فضي', en: 'Silver' },
+  gold: { ar: 'ذهبي', en: 'Gold' },
+  platinum: { ar: 'بلاتيني', en: 'Platinum' },
+};
 
 export default function WorkerCustomersPage() {
+  const t = useT();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -42,18 +50,18 @@ export default function WorkerCustomersPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-gray-800">العملاء</h1>
-        <p className="text-sm text-gray-400 mt-0.5">{customers.length} عميل</p>
+        <h1 className="text-xl font-bold text-gray-800">{t('العملاء', 'Customers')}</h1>
+        <p className="text-sm text-gray-400 mt-0.5">{customers.length} {t('عميل', 'customer(s)')}</p>
       </div>
       <div className="relative">
         <FiSearch size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input type="text" placeholder="بحث بالاسم أو رقم الجوال..." value={search} onChange={e => setSearch(e.target.value)}
+        <input type="text" placeholder={t('بحث بالاسم أو رقم الجوال...', 'Search by name or phone...')} value={search} onChange={e => setSearch(e.target.value)}
           className="w-full pr-9 pl-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#5B7B6D]/30 focus:border-[#5B7B6D] outline-none bg-gray-50 focus:bg-white transition-all" />
       </div>
       {filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center text-gray-400">
           <FiUsers size={32} className="mx-auto mb-3 text-gray-200" />
-          <p>لا يوجد عملاء</p>
+          <p>{t('لا يوجد عملاء', 'No customers')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -67,7 +75,7 @@ export default function WorkerCustomersPage() {
                   <div>
                     <p className="text-sm font-bold text-gray-800">{customer.name}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-lg font-medium ${tierColors[customer.loyaltyTier] || 'bg-gray-50 text-gray-500'}`}>
-                      {tierEmoji[customer.loyaltyTier]} {customer.loyaltyTier}
+                      {tierEmoji[customer.loyaltyTier]} {tierLabelsMap[customer.loyaltyTier] ? t(tierLabelsMap[customer.loyaltyTier].ar, tierLabelsMap[customer.loyaltyTier].en) : customer.loyaltyTier}
                     </span>
                   </div>
                 </div>
@@ -75,7 +83,7 @@ export default function WorkerCustomersPage() {
                   <p className="text-sm font-bold text-[#5B7B6D] flex items-center gap-0.5 justify-end">
                     {customer.totalSpent.toFixed(2)} <SarIcon size={11} />
                   </p>
-                  <p className="text-xs text-gray-400">{customer.totalOrders} طلب</p>
+                  <p className="text-xs text-gray-400">{customer.totalOrders} {t('طلب', 'order(s)')}</p>
                 </div>
               </div>
               <div className="space-y-1 border-t border-gray-50 pt-2">

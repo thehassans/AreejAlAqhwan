@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { FiShoppingCart, FiSearch } from 'react-icons/fi';
 import SarIcon from '@/components/SarIcon';
+import { useT } from '@/lib/i18n';
 
 interface Order {
   _id: string;
@@ -19,8 +20,11 @@ const statusColors: Record<string, string> = {
   completed: 'bg-emerald-50 text-emerald-700',
   cancelled: 'bg-red-50 text-red-700',
 };
-const statusLabels: Record<string, string> = {
-  pending: 'قيد الانتظار', processing: 'قيد التنفيذ', completed: 'مكتمل', cancelled: 'ملغي',
+const statusLabelsMap: Record<string, { ar: string; en: string }> = {
+  pending: { ar: 'قيد الانتظار', en: 'Pending' },
+  processing: { ar: 'قيد التنفيذ', en: 'Processing' },
+  completed: { ar: 'مكتمل', en: 'Completed' },
+  cancelled: { ar: 'ملغي', en: 'Cancelled' },
 };
 
 const fmtDate = (d: string) => {
@@ -29,6 +33,7 @@ const fmtDate = (d: string) => {
 };
 
 export default function WorkerOrdersPage() {
+  const t = useT();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -47,18 +52,18 @@ export default function WorkerOrdersPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-gray-800">الطلبات</h1>
-        <p className="text-sm text-gray-400 mt-0.5">{orders.length} طلب</p>
+        <h1 className="text-xl font-bold text-gray-800">{t('الطلبات', 'Orders')}</h1>
+        <p className="text-sm text-gray-400 mt-0.5">{orders.length} {t('طلب', 'order(s)')}</p>
       </div>
       <div className="relative">
         <FiSearch size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input type="text" placeholder="بحث في الطلبات..." value={search} onChange={e => setSearch(e.target.value)}
+        <input type="text" placeholder={t('بحث في الطلبات...', 'Search orders...')} value={search} onChange={e => setSearch(e.target.value)}
           className="w-full pr-9 pl-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#5B7B6D]/30 focus:border-[#5B7B6D] outline-none bg-gray-50 focus:bg-white transition-all" />
       </div>
       {filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center text-gray-400">
           <FiShoppingCart size={32} className="mx-auto mb-3 text-gray-200" />
-          <p>لا توجد طلبات</p>
+          <p>{t('لا توجد طلبات', 'No orders')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -71,7 +76,7 @@ export default function WorkerOrdersPage() {
                 </div>
                 <div className="text-left space-y-1">
                   <span className={`text-xs px-2 py-0.5 rounded-lg font-medium block text-center ${statusColors[order.status] || 'bg-gray-50 text-gray-500'}`}>
-                    {statusLabels[order.status] || order.status}
+                    {statusLabelsMap[order.status] ? t(statusLabelsMap[order.status].ar, statusLabelsMap[order.status].en) : order.status}
                   </span>
                   <span className="flex items-center gap-0.5 text-sm font-bold text-[#5B7B6D] justify-end">
                     {(order.total || 0).toFixed(2)} <SarIcon size={11} />

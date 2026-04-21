@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { FiPackage, FiSearch } from 'react-icons/fi';
 import Image from 'next/image';
 import SarIcon from '@/components/SarIcon';
+import { useT } from '@/lib/i18n';
 
 interface Product {
   _id: string;
@@ -17,6 +18,7 @@ interface Product {
 }
 
 export default function WorkerProductsPage() {
+  const t = useT();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -35,18 +37,18 @@ export default function WorkerProductsPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-gray-800">المنتجات</h1>
-        <p className="text-sm text-gray-400 mt-0.5">{products.length} منتج</p>
+        <h1 className="text-xl font-bold text-gray-800">{t('المنتجات', 'Products')}</h1>
+        <p className="text-sm text-gray-400 mt-0.5">{products.length} {t('منتج', 'product(s)')}</p>
       </div>
       <div className="relative">
         <FiSearch size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input type="text" placeholder="بحث في المنتجات..." value={search} onChange={e => setSearch(e.target.value)}
+        <input type="text" placeholder={t('بحث في المنتجات...', 'Search products...')} value={search} onChange={e => setSearch(e.target.value)}
           className="w-full pr-9 pl-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#5B7B6D]/30 focus:border-[#5B7B6D] outline-none bg-gray-50 focus:bg-white transition-all" />
       </div>
       {filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center text-gray-400">
           <FiPackage size={32} className="mx-auto mb-3 text-gray-200" />
-          <p>لا توجد منتجات</p>
+          <p>{t('لا توجد منتجات', 'No products')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -62,7 +64,7 @@ export default function WorkerProductsPage() {
                 )}
                 {!product.isAvailable && (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <span className="text-white text-xs bg-red-500 px-2 py-0.5 rounded-full">غير متاح</span>
+                    <span className="text-white text-xs bg-red-500 px-2 py-0.5 rounded-full">{t('غير متاح', 'Unavailable')}</span>
                   </div>
                 )}
               </div>
@@ -72,7 +74,7 @@ export default function WorkerProductsPage() {
                   <span className="flex items-center gap-0.5 text-sm font-bold text-[#5B7B6D]">
                     {product.price.toFixed(2)} <SarIcon size={11} />
                   </span>
-                  <span className="text-xs text-gray-400">مخزون: {product.stock}</span>
+                  <span className="text-xs text-gray-400">{t('مخزون', 'Stock')}: {product.stock}</span>
                 </div>
               </div>
             </div>

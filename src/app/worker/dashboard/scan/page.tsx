@@ -3,10 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { FiCamera, FiCheckCircle, FiAlertCircle, FiRefreshCw, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useT, useLocale } from '@/lib/i18n';
 
 type ScanState = 'idle' | 'scanning' | 'success' | 'error';
 
 export default function ScanAttendancePage() {
+  const t = useT();
+  const { lang } = useLocale();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -16,7 +19,7 @@ export default function ScanAttendancePage() {
   const [workerId, setWorkerId] = useState('');
   const [cameraError, setCameraError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const today = new Date().toLocaleDateString('ar-SA', {
+  const today = new Date().toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
 
@@ -54,7 +57,7 @@ export default function ScanAttendancePage() {
       scanLoop();
     } catch (err) {
       console.error('Camera error:', err);
-      setCameraError('تعذّر الوصول إلى الكاميرا. تأكد من منح الإذن.');
+      setCameraError(t('تعذّر الوصول إلى الكاميرا. تأكد من منح الإذن.', 'Cannot access camera. Please grant permission.'));
       setScanState('idle');
     }
   };
@@ -109,17 +112,17 @@ export default function ScanAttendancePage() {
 
       if (res.ok) {
         setScanState('success');
-        setResultMessage(`تم تسجيل حضورك بنجاح في ${data.checkInTime}`);
-        toast.success('تم تسجيل الحضور ✅');
+        setResultMessage(t(`تم تسجيل حضورك بنجاح في ${data.checkInTime}`, `Check-in successful at ${data.checkInTime}`));
+        toast.success(t('تم تسجيل الحضور ✅', 'Attendance recorded ✅'));
       } else {
         setScanState('error');
-        setResultMessage(data.error || 'فشل تسجيل الحضور');
-        toast.error(data.error || 'فشل تسجيل الحضور');
+        setResultMessage(data.error || t('فشل تسجيل الحضور', 'Attendance failed'));
+        toast.error(data.error || t('فشل تسجيل الحضور', 'Attendance failed'));
       }
     } catch {
       setScanState('error');
-      setResultMessage('حدث خطأ في الاتصال');
-      toast.error('حدث خطأ في الاتصال');
+      setResultMessage(t('حدث خطأ في الاتصال', 'Connection error'));
+      toast.error(t('حدث خطأ في الاتصال', 'Connection error'));
     } finally {
       setIsProcessing(false);
     }
@@ -137,7 +140,7 @@ export default function ScanAttendancePage() {
     <div className="max-w-md mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">تسجيل الحضور</h1>
+        <h1 className="text-2xl font-bold text-gray-800">{t('تسجيل الحضور', 'Check-in')}</h1>
         <p className="text-sm text-gray-500 mt-0.5">{today}</p>
       </div>
 
@@ -185,7 +188,7 @@ export default function ScanAttendancePage() {
               {/* Hint text */}
               <div className="absolute bottom-6 inset-x-0 flex justify-center">
                 <span className="bg-black/60 text-white text-xs px-4 py-2 rounded-full backdrop-blur-sm">
-                  وجّه الكاميرا نحو رمز QR
+                  {t('وجّه الكاميرا نحو رمز QR', 'Point the camera at the QR code')}
                 </span>
               </div>
             </div>
@@ -197,7 +200,7 @@ export default function ScanAttendancePage() {
               <div className="w-24 h-24 rounded-full bg-emerald-400/20 flex items-center justify-center mb-4 animate-bounce" style={{ animation: 'none' }}>
                 <FiCheckCircle size={52} className="text-emerald-300" />
               </div>
-              <p className="text-xl font-bold">تم بنجاح! ✅</p>
+              <p className="text-xl font-bold">{t('تم بنجاح! ✅', 'Success! ✅')}</p>
               <p className="text-sm text-emerald-200 mt-2 text-center px-8">{resultMessage}</p>
             </div>
           )}
@@ -208,7 +211,7 @@ export default function ScanAttendancePage() {
               <div className="w-24 h-24 rounded-full bg-red-400/20 flex items-center justify-center mb-4">
                 <FiAlertCircle size={52} className="text-red-300" />
               </div>
-              <p className="text-xl font-bold">فشل التسجيل</p>
+              <p className="text-xl font-bold">{t('فشل التسجيل', 'Check-in failed')}</p>
               <p className="text-sm text-red-200 mt-2 text-center px-8">{resultMessage}</p>
             </div>
           )}
@@ -218,7 +221,7 @@ export default function ScanAttendancePage() {
             <button
               onClick={reset}
               className="absolute top-3 left-3 z-20 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-all"
-              aria-label="إيقاف المسح"
+              aria-label={t('إيقاف المسح', 'Stop scanning')}
             >
               <FiX size={18} />
             </button>
@@ -248,12 +251,12 @@ export default function ScanAttendancePage() {
               {scanState === 'scanning' ? (
                 <>
                   <FiX size={18} />
-                  إيقاف المسح
+                  {t('إيقاف المسح', 'Stop scanning')}
                 </>
               ) : (
                 <>
                   <FiCamera size={20} />
-                  ابدأ مسح QR
+                  {t('ابدأ مسح QR', 'Start QR scan')}
                 </>
               )}
             </button>
@@ -265,30 +268,30 @@ export default function ScanAttendancePage() {
               className="w-full py-4 rounded-2xl font-bold text-base bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
             >
               <FiRefreshCw size={18} />
-              مسح مرة أخرى
+              {t('مسح مرة أخرى', 'Scan again')}
             </button>
           )}
 
           <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
-            <p className="text-xs font-semibold text-gray-600">كيفية تسجيل الحضور:</p>
+            <p className="text-xs font-semibold text-gray-600">{t('كيفية تسجيل الحضور:', 'How to check in:')}</p>
             <ol className="text-xs text-gray-500 space-y-1 list-none">
               <li className="flex items-start gap-2">
                 <span className="w-4 h-4 bg-[#5B7B6D]/10 text-[#5B7B6D] rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">١</span>
-                اضغط على "ابدأ مسح QR"
+                {t('اضغط على "ابدأ مسح QR"', 'Tap "Start QR scan"')}
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-4 h-4 bg-[#5B7B6D]/10 text-[#5B7B6D] rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">٢</span>
-                وجّه الكاميرا نحو رمز QR في لوحة الإدارة
+                {t('وجّه الكاميرا نحو رمز QR في لوحة الإدارة', 'Point the camera at the QR code on the admin panel')}
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-4 h-4 bg-[#5B7B6D]/10 text-[#5B7B6D] rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">٣</span>
-                سيتم تسجيل حضورك تلقائياً عند القراءة
+                {t('سيتم تسجيل حضورك تلقائياً عند القراءة', 'Your attendance will be recorded automatically upon scan')}
               </li>
             </ol>
           </div>
 
           <p className="text-xs text-center text-gray-400">
-            رمز QR اليومي يتغير كل يوم — تأكد من مسح الرمز الصحيح
+            {t('رمز QR اليومي يتغير كل يوم — تأكد من مسح الرمز الصحيح', 'The daily QR changes every day — make sure you scan the correct one')}
           </p>
         </div>
       </div>
