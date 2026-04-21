@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import SarIcon from '@/components/SarIcon';
 import { buildInvoiceWhatsAppMessage } from '@/lib/invoiceWhatsApp';
 import { useT } from '@/lib/i18n';
+import { normalizeSaLocal, toSaIntl } from '@/lib/phone';
 
 interface InvoiceItem {
   name: string;
@@ -120,7 +121,7 @@ export default function CreateInvoicePage() {
   }, []);
 
   const selectCustomer = (c: Customer) => {
-    setCustomerName(c.name); setCustomerPhone(c.phone); setCustomerEmail(c.email || '');
+    setCustomerName(c.name); setCustomerPhone(normalizeSaLocal(c.phone)); setCustomerEmail(c.email || '');
     setSelectedCustomer(c); setShowSuggestions(false);
   };
 
@@ -213,7 +214,8 @@ export default function CreateInvoicePage() {
     setItems(newItems);
   };
 
-  const subtotal = items.reduce((sum, i) => sum + i.total, 0);
+  const lineTotal = (i: InvoiceItem) => (Number(i.quantity) || 0) * (Number(i.unitPrice) || 0);
+  const subtotal = items.reduce((sum, i) => sum + lineTotal(i), 0);
   const rawDiscountAmount = discountType === 'percentage'
     ? (subtotal * discount) / 100
     : discount;
@@ -226,16 +228,25 @@ export default function CreateInvoicePage() {
     const { print: andPrint = false, whatsapp: andWhatsapp = false } = opts;
     if (!customerName.trim()) { toast.error(t('يرجى إدخال اسم العميل', 'Please enter customer name')); return; }
     if (items.some((i) => !i.nameAr && !i.name)) { toast.error(t('يرجى إدخال اسم المنتج', 'Please enter product name')); return; }
-    if (andWhatsapp && !customerPhone.trim()) { toast.error(t('يرجى إدخال رقم جوال العميل لإرسال الفاتورة عبر واتساب', 'Please enter customer phone to send invoice via WhatsApp')); return; }
+    const phoneLocal = normalizeSaLocal(customerPhone);
+    if (andWhatsapp && phoneLocal.length < 9) { toast.error(t('يرجى إدخال رقم جوال العميل لإرسال الفاتورة عبر واتساب', 'Please enter customer phone to send invoice via WhatsApp')); return; }
+
+    // Pre-open a tab synchronously so the browser does not block it after the await.
+    let waWindow: Window | null = null;
+    if (andWhatsapp) {
+      waWindow = window.open('about:blank', '_blank', 'noopener,noreferrer');
+    }
 
     setSaving(true);
     try {
+      const normalizedItems = items.map((i) => ({ ...i, total: lineTotal(i) }));
+      const phoneIntl = phoneLocal ? toSaIntl(customerPhone) : '';
       const res = await fetch('/api/invoices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          invoiceNumber, customerName, customerPhone, customerEmail,
-          items, subtotal, discount, discountType,
+          invoiceNumber, customerName, customerPhone: phoneIntl, customerEmail,
+          items: normalizedItems, subtotal, discount, discountType,
           vat: settings?.vatPercentage || 0, vatAmount, total, notes,
         }),
       });
@@ -254,16 +265,19 @@ export default function CreateInvoicePage() {
               discountType: inv.discountType ?? discountType,
               vat: inv.vat ?? (settings?.vatPercentage || 0),
               vatAmount: inv.vatAmount ?? vatAmount,
-              items: (inv.items ?? items) as InvoiceItem[],
+              items: (inv.items ?? normalizedItems) as InvoiceItem[],
             },
             settings || undefined,
           );
-          let phone = (inv.customerPhone || customerPhone).replace(/[^0-9]/g, '');
-          if (phone.startsWith('0')) phone = '966' + phone.slice(1);
+          const phone = toSaIntl(inv.customerPhone || customerPhone);
           const waUrl = phone
             ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
             : `https://wa.me/?text=${encodeURIComponent(message)}`;
-          window.open(waUrl, '_blank', 'noopener,noreferrer');
+          if (waWindow && !waWindow.closed) {
+            waWindow.location.href = waUrl;
+          } else {
+            window.open(waUrl, '_blank', 'noopener,noreferrer');
+          }
           router.push('/admin/dashboard/invoices');
         } else if (andPrint) {
           router.push(`/admin/dashboard/invoices/${inv._id}?print=true`);
@@ -271,9 +285,11 @@ export default function CreateInvoicePage() {
           router.push('/admin/dashboard/invoices');
         }
       } else {
+        if (waWindow && !waWindow.closed) waWindow.close();
         toast.error(t('فشل إنشاء الفاتورة', 'Failed to create invoice'));
       }
     } catch {
+      if (waWindow && !waWindow.closed) waWindow.close();
       toast.error(t('حدث خطأ', 'An error occurred'));
     } finally {
       setSaving(false);
@@ -372,12 +388,14 @@ export default function CreateInvoicePage() {
           </div>
           <div ref={phoneRef} className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('رقم الجوال', 'Phone Number')}</label>
-            <div className="relative">
-              <input type="text" value={customerPhone}
-                onChange={(e) => { setCustomerPhone(e.target.value); setSelectedCustomer(null); }}
+            <div className="relative flex items-stretch" dir="ltr">
+              <span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-gray-300 bg-gray-50 text-gray-600 text-sm select-none">+966</span>
+              <input type="tel" inputMode="numeric" value={customerPhone}
+                onChange={(e) => { setCustomerPhone(normalizeSaLocal(e.target.value)); setSelectedCustomer(null); }}
+                onPaste={(e) => { e.preventDefault(); const t2 = e.clipboardData.getData('text'); setCustomerPhone(normalizeSaLocal(t2)); setSelectedCustomer(null); }}
                 onFocus={() => phoneSuggestions.length > 0 && setShowSuggestions(true)}
-                className="w-full px-4 py-2 pr-9 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" dir="ltr" placeholder="05xxxxxxxx" />
-              <FiSearch size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                maxLength={9}
+                className="flex-1 w-full px-4 py-2 border border-gray-300 rounded-r-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" placeholder="5XXXXXXXX" />
             </div>
             {showSuggestions && (
               <div className="absolute z-50 top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
@@ -498,7 +516,7 @@ export default function CreateInvoicePage() {
                     placeholder="0.00"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-[#5B7B6D] outline-none" />
                 </div>
-                <div className="col-span-1 text-center font-bold text-sm py-2">{item.total.toFixed(2)}</div>
+                <div className="col-span-1 text-center font-bold text-sm py-2">{lineTotal(item).toFixed(2)}</div>
                 <div className="col-span-1 flex items-end gap-1">
                   <button onClick={() => openPicker(i)} title={t('اختر من المنتجات', 'Choose from products')} className="p-2 text-[#5B7B6D] hover:bg-[#5B7B6D]/10 rounded-lg">
                     <FiSearch size={14} />
