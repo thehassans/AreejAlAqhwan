@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiX, FiCheck, FiUser, FiPhone, FiMail, FiLock, FiShield, FiUserCheck, FiToggleLeft, FiToggleRight } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiX, FiCheck, FiUser, FiPhone, FiMail, FiLock, FiShield, FiUserCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
 
@@ -11,7 +11,6 @@ interface Worker {
   phone: string;
   email: string;
   pageAccess: string[];
-  isActive: boolean;
   createdAt: string;
 }
 
@@ -23,7 +22,7 @@ const ALL_PAGES: { key: string; labelAr: string; labelEn: string; icon: string }
   { key: 'settings', labelAr: 'الإعدادات', labelEn: 'Settings', icon: '⚙️' },
 ];
 
-const emptyForm = { name: '', phone: '', email: '', password: '', pageAccess: [] as string[], isActive: true };
+const emptyForm = { name: '', phone: '', email: '', password: '', pageAccess: [] as string[] };
 
 export default function WorkersPage() {
   const t = useT();
@@ -48,7 +47,7 @@ export default function WorkersPage() {
 
   const openEdit = (w: Worker) => {
     setEditingWorker(w);
-    setForm({ name: w.name, phone: w.phone, email: w.email, password: '', pageAccess: w.pageAccess, isActive: w.isActive });
+    setForm({ name: w.name, phone: w.phone, email: w.email, password: '', pageAccess: w.pageAccess });
     setModalOpen(true);
   };
 
@@ -125,30 +124,19 @@ export default function WorkersPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
               <FiUserCheck size={20} className="text-emerald-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-800">{workers.filter(w => w.isActive).length}</p>
-              <p className="text-xs text-gray-500">{t('موظف نشط', 'Active')}</p>
+              <p className="text-2xl font-bold text-gray-800">{workers.length}</p>
+              <p className="text-xs text-gray-500">{t('موظف نشط', 'Active employees')}</p>
             </div>
           </div>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center">
-              <FiUser size={20} className="text-gray-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-800">{workers.filter(w => !w.isActive).length}</p>
-              <p className="text-xs text-gray-500">{t('موظف غير نشط', 'Inactive')}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 col-span-2 sm:col-span-1">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
               <FiShield size={20} className="text-blue-500" />
@@ -183,9 +171,9 @@ export default function WorkersPage() {
                     </div>
                     <div>
                       <p className="text-white font-bold">{worker.name}</p>
-                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium mt-0.5 ${worker.isActive ? 'bg-emerald-400/30 text-emerald-100' : 'bg-gray-400/30 text-gray-200'}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${worker.isActive ? 'bg-emerald-300' : 'bg-gray-400'}`} />
-                        {worker.isActive ? t('نشط', 'Active') : t('غير نشط', 'Inactive')}
+                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium mt-0.5 bg-emerald-400/30 text-emerald-100">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
+                        {t('نشط', 'Active')}
                       </span>
                     </div>
                   </div>
@@ -360,21 +348,6 @@ export default function WorkersPage() {
                 </div>
               </div>
 
-              {/* Active Toggle */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <div>
-                  <p className="text-sm font-semibold text-gray-700">{t('حالة الموظف', 'Employee status')}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{form.isActive ? t('الموظف نشط ويمكنه تسجيل الدخول', 'Employee is active and can sign in') : t('الموظف غير نشط', 'Employee is inactive')}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setForm(f => ({ ...f, isActive: !f.isActive }))}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-all ${form.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'}`}
-                >
-                  {form.isActive ? <FiToggleRight size={20} /> : <FiToggleLeft size={20} />}
-                  {form.isActive ? t('نشط', 'Active') : t('غير نشط', 'Inactive')}
-                </button>
-              </div>
             </div>
 
             {/* Modal Footer */}

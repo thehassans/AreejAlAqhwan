@@ -44,12 +44,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'تم تسجيل الحضور لهذا اليوم بالفعل' }, { status: 400 });
     }
 
+    // Record the check-in time in Saudi Arabia timezone (Asia/Riyadh, UTC+3) as HH:mm:ss (24h)
     const now = new Date();
     const checkInTime = new Intl.DateTimeFormat('en-GB', {
       timeZone: 'Asia/Riyadh',
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
+      hour12: false,
     }).format(now);
 
     const record = await Attendance.create({

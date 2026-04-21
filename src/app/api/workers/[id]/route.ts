@@ -20,9 +20,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     await dbConnect();
-    const { name, phone, email, password, pageAccess, isActive } = await req.json();
+    const { name, phone, email, password, pageAccess } = await req.json();
 
-    const updateData: Record<string, unknown> = { name, phone, email, pageAccess, isActive };
+    const updateData: Record<string, unknown> = { name, phone, email, pageAccess, isActive: true };
     if (password && password.trim()) {
       updateData.password = await bcrypt.hash(password, 10);
     }

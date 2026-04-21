@@ -17,7 +17,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     await dbConnect();
-    const { name, phone, email, password, pageAccess, isActive } = await req.json();
+    const { name, phone, email, password, pageAccess } = await req.json();
 
     if (!name || !phone || !email || !password) {
       return NextResponse.json({ error: 'جميع الحقول مطلوبة' }, { status: 400 });
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       name, phone, email,
       password: hashed,
       pageAccess: pageAccess || [],
-      isActive: isActive !== undefined ? isActive : true,
+      isActive: true,
     });
 
     const { password: _, ...workerData } = worker.toObject();
