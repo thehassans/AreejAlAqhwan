@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -50,9 +52,25 @@ export default function AdminLoginPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">كلمة المرور</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr"
-              placeholder="••••••••" required
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#5B7B6D]/30 focus:border-[#5B7B6D] outline-none text-sm" />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                dir="ltr"
+                placeholder="••••••••"
+                required
+                className="w-full px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#5B7B6D]/30 focus:border-[#5B7B6D] outline-none text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                className="absolute inset-y-0 right-2 flex items-center px-2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+              </button>
+            </div>
           </div>
           <button type="submit" disabled={loading}
             className="w-full py-3 bg-[#5B7B6D] text-white rounded-xl font-semibold hover:bg-[#4a6a5c] disabled:opacity-50 transition-colors">

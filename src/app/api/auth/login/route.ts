@@ -10,7 +10,38 @@ export async function POST(req: NextRequest) {
     await dbConnect();
     const { email, password } = await req.json();
 
-    // Try admin first
+    // Env-based admin credentials are the source of truth.
+    // If the submitted email matches ADMIN_EMAIL and password matches ADMIN_PASSWORD,
+    // upsert/sync the DB admin and log the user in — no manual /api/seed needed.
+    const envAdminEmail = process.env.ADMIN_EMAIL;
+    const envAdminPassword = process.env.ADMIN_PASSWORD;
+    const envAdminName = process.env.ADMIN_NAME || 'Admin';
+
+    if (
+      envAdminEmail &&
+      envAdminPassword &&
+      typeof email === 'string' &&
+      email.trim().toLowerCase() === envAdminEmail.trim().toLowerCase() &&
+      password === envAdminPassword
+    ) {
+      const hashed = await bcrypt.hash(envAdminPassword, 12);
+      let admin = await Admin.findOne({ email: envAdminEmail });
+      if (!admin) {
+        admin = await Admin.create({ name: envAdminName, email: envAdminEmail, password: hashed });
+      } else {
+        admin.name = envAdminName;
+        admin.password = hashed;
+        await admin.save();
+      }
+      const token = signToken({ id: admin._id.toString(), email: admin.email, name: admin.name, role: 'admin' });
+      const response = NextResponse.json({ success: true, admin: { name: admin.name, email: admin.email, role: 'admin' } });
+      response.cookies.set('admin_token', token, {
+        httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 60 * 60 * 24 * 7, path: '/',
+      });
+      return response;
+    }
+
+    // Fallback: DB-backed admin (e.g. after an in-app password change)
     const admin = await Admin.findOne({ email });
     if (admin) {
       const isValid = await bcrypt.compare(password, admin.password);
