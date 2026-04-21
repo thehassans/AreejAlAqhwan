@@ -6,9 +6,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   FiHome, FiFileText, FiPackage, FiShoppingCart, FiUsers,
-  FiSettings, FiLogOut, FiCamera,
+  FiSettings, FiCamera,
 } from 'react-icons/fi';
 import DashboardMobileNav from '@/components/DashboardMobileNav';
+import DashboardHeader from '@/components/DashboardHeader';
+import { useT } from '@/lib/i18n';
 
 interface WorkerPayload {
   name: string;
@@ -16,17 +18,18 @@ interface WorkerPayload {
   pageAccess: string[];
 }
 
-const PAGE_MAP: Record<string, { href: string; label: string; icon: React.ElementType }> = {
-  invoices:  { href: '/worker/dashboard/invoices',  label: 'الفواتير',    icon: FiFileText },
-  products:  { href: '/worker/dashboard/products',  label: 'المنتجات',    icon: FiPackage },
-  orders:    { href: '/worker/dashboard/orders',    label: 'الطلبات',     icon: FiShoppingCart },
-  customers: { href: '/worker/dashboard/customers', label: 'العملاء',     icon: FiUsers },
-  settings:  { href: '/worker/dashboard/settings',  label: 'الإعدادات',   icon: FiSettings },
+const PAGE_MAP: Record<string, { href: string; labelAr: string; labelEn: string; icon: React.ElementType }> = {
+  invoices:  { href: '/worker/dashboard/invoices',  labelAr: 'الفواتير',   labelEn: 'Invoices',  icon: FiFileText },
+  products:  { href: '/worker/dashboard/products',  labelAr: 'المنتجات',   labelEn: 'Products',  icon: FiPackage },
+  orders:    { href: '/worker/dashboard/orders',    labelAr: 'الطلبات',    labelEn: 'Orders',    icon: FiShoppingCart },
+  customers: { href: '/worker/dashboard/customers', labelAr: 'العملاء',    labelEn: 'Customers', icon: FiUsers },
+  settings:  { href: '/worker/dashboard/settings',  labelAr: 'الإعدادات',  labelEn: 'Settings',  icon: FiSettings },
 };
 
 export default function WorkerDashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const t = useT();
   const [worker, setWorker] = useState<WorkerPayload | null>(null);
   const [checking, setChecking] = useState(true);
 
@@ -56,10 +59,12 @@ export default function WorkerDashboardLayout({ children }: { children: React.Re
   }
 
   const allowedNavItems = [
-    { href: '/worker/dashboard', label: 'الرئيسية', icon: FiHome },
-    { href: '/worker/dashboard/scan', label: 'تسجيل الحضور', icon: FiCamera, variant: 'accent' as const },
+    { href: '/worker/dashboard', labelAr: 'الرئيسية', labelEn: 'Home', icon: FiHome },
+    { href: '/worker/dashboard/scan', labelAr: 'تسجيل الحضور', labelEn: 'Check-in', icon: FiCamera, variant: 'accent' as const },
     ...(worker?.pageAccess || []).map(key => PAGE_MAP[key]).filter(Boolean),
   ];
+
+  const mobileNavItems = allowedNavItems.map((n) => ({ href: n.href, label: t(n.labelAr, n.labelEn), icon: n.icon }));
 
   return (
     <div className="min-h-screen bg-gray-50 lg:flex">
@@ -70,8 +75,8 @@ export default function WorkerDashboardLayout({ children }: { children: React.Re
               <Image src="/logo.png" alt="Logo" fill className="object-cover" unoptimized />
             </div>
             <div>
-              <span className="text-sm font-bold text-[#5B7B6D] block">أريج الأقحوان</span>
-              <span className="text-xs text-gray-400">لوحة الموظف</span>
+              <span className="text-sm font-bold text-[#5B7B6D] block">{t('أريج الأقحوان', 'Areej Al Aqhwan')}</span>
+              <span className="text-xs text-gray-400">{t('لوحة الموظف', 'Employee Panel')}</span>
             </div>
           </Link>
         </div>
@@ -111,7 +116,7 @@ export default function WorkerDashboardLayout({ children }: { children: React.Re
                 }`}
               >
                 <Icon size={18} />
-                {item.label}
+                {t(item.labelAr, item.labelEn)}
                 {isScan && !isActive && (
                   <span className="mr-auto flex items-center justify-center w-5 h-5 bg-emerald-500 rounded-full">
                     <span className="w-2 h-2 bg-white rounded-full" />
@@ -122,39 +127,19 @@ export default function WorkerDashboardLayout({ children }: { children: React.Re
           })}
         </nav>
 
-        <div className="mt-auto p-4 border-t bg-white">
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors"
-          >
-            <FiLogOut size={18} />
-            تسجيل الخروج
-          </button>
-        </div>
       </aside>
 
       <div className="flex min-h-screen flex-1 flex-col min-w-0">
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-200 px-4 py-3 lg:hidden">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 relative">
-                <Image src="/logo.png" alt="Logo" fill className="object-cover" unoptimized />
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-base font-bold text-[#5B7B6D] truncate">أريج الأقحوان</h1>
-                {worker && <p className="text-xs text-gray-400 truncate">{worker.name}</p>}
-              </div>
-            </div>
-            <button onClick={handleLogout} className="shrink-0 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors">
-              خروج
-            </button>
-          </div>
-        </header>
+        <DashboardHeader
+          onLogout={handleLogout}
+          userName={worker?.name}
+          userRole={worker?.email}
+        />
         <main className="flex-1 p-4 pb-24 lg:p-6 lg:pb-6 overflow-auto">
           {children}
         </main>
         <div className="lg:hidden">
-          <DashboardMobileNav items={allowedNavItems} />
+          <DashboardMobileNav items={mobileNavItems} />
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { formatCurrency } from '@/lib/utils';
 import SarIcon from '@/components/SarIcon';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
 
 interface Product {
   _id: string;
@@ -19,6 +20,7 @@ interface Product {
 }
 
 export default function ProductsPage() {
+  const t = useT();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,13 +29,13 @@ export default function ProductsPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
+    if (!confirm(t('هل أنت متأكد من حذف هذا المنتج؟', 'Delete this product?'))) return;
     const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
     if (res.ok) {
       setProducts(products.filter((p) => p._id !== id));
-      toast.success('تم حذف المنتج');
+      toast.success(t('تم حذف المنتج', 'Product deleted'));
     } else {
-      toast.error('فشل حذف المنتج');
+      toast.error(t('فشل حذف المنتج', 'Failed to delete product'));
     }
   };
 
@@ -53,15 +55,15 @@ export default function ProductsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800">المنتجات</h1>
+        <h1 className="text-2xl font-bold text-gray-800">{t('المنتجات', 'Products')}</h1>
         <Link href="/admin/dashboard/products/create" className="flex items-center gap-2 px-4 py-2 bg-[#5B7B6D] text-white rounded-xl text-sm font-medium hover:bg-[#4a6a5c] transition-colors">
-          <FiPlus size={16} /> إضافة منتج
+          <FiPlus size={16} /> {t('إضافة منتج', 'Add product')}
         </Link>
       </div>
 
       {products.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border p-12 text-center text-gray-400">
-          <p className="text-lg">لا توجد منتجات بعد</p>
+          <p className="text-lg">{t('لا توجد منتجات بعد', 'No products yet')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -69,7 +71,7 @@ export default function ProductsPage() {
             <div key={product._id} className="bg-white rounded-xl shadow-sm border overflow-hidden">
               <div className="relative h-48 bg-gray-100">
                 <img src={product.images?.[0] || '/logo.png'} alt={product.nameAr} className="w-full h-full object-cover" />
-                {product.featured && <span className="absolute top-2 right-2 px-2 py-0.5 bg-yellow-400 text-yellow-900 text-xs rounded-full font-medium">مميز</span>}
+                {product.featured && <span className="absolute top-2 right-2 px-2 py-0.5 bg-yellow-400 text-yellow-900 text-xs rounded-full font-medium">{t('مميز', 'Featured')}</span>}
               </div>
               <div className="p-4">
                 <h3 className="font-bold text-sm truncate">{product.nameAr}</h3>
@@ -78,19 +80,19 @@ export default function ProductsPage() {
                 <div className="flex items-center gap-2 mt-3">
                   <button onClick={() => toggleField(product._id, 'inStock', product.inStock)}
                     className={`text-xs px-2 py-1 rounded-full ${product.inStock ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {product.inStock ? 'متوفر' : 'غير متوفر'}
+                    {product.inStock ? t('متوفر', 'In stock') : t('غير متوفر', 'Out of stock')}
                   </button>
                   <button onClick={() => toggleField(product._id, 'featured', product.featured)}
                     className={`text-xs px-2 py-1 rounded-full ${product.featured ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'}`}>
-                    {product.featured ? 'مميز' : 'عادي'}
+                    {product.featured ? t('مميز', 'Featured') : t('عادي', 'Regular')}
                   </button>
                 </div>
                 <div className="flex items-center gap-2 mt-3 border-t pt-3">
                   <Link href={`/admin/dashboard/products/${product._id}`} className="flex-1 flex items-center justify-center gap-1 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg text-xs font-medium">
-                    <FiEdit size={12} /> تعديل
+                    <FiEdit size={12} /> {t('تعديل', 'Edit')}
                   </Link>
                   <button onClick={() => handleDelete(product._id)} className="flex-1 flex items-center justify-center gap-1 py-1.5 text-red-600 hover:bg-red-50 rounded-lg text-xs font-medium">
-                    <FiTrash2 size={12} /> حذف
+                    <FiTrash2 size={12} /> {t('حذف', 'Delete')}
                   </button>
                 </div>
               </div>

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { FiUpload, FiEye, FiEyeOff, FiAlertTriangle } from 'react-icons/fi';
 import { FaInstagram, FaFacebookF, FaXTwitter, FaPinterestP, FaTiktok, FaSnapchat } from 'react-icons/fa6';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
 
 interface Settings {
   storeName: string; storeNameEn: string; storeDescription: string; storeDescriptionEn: string;
@@ -19,6 +20,7 @@ interface Settings {
 }
 
 export default function SettingsPage() {
+  const t = useT();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -45,16 +47,16 @@ export default function SettingsPage() {
       const res = await fetch('/api/settings', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings),
       });
-      if (res.ok) toast.success('تم حفظ الإعدادات');
-      else toast.error('فشل حفظ الإعدادات');
-    } catch { toast.error('حدث خطأ'); }
+      if (res.ok) toast.success(t('تم حفظ الإعدادات', 'Settings saved'));
+      else toast.error(t('فشل حفظ الإعدادات', 'Failed to save settings'));
+    } catch { toast.error(t('حدث خطأ', 'An error occurred')); }
     finally { setSaving(false); }
   };
 
   const handleChangePassword = async () => {
-    if (!pwForm.current || !pwForm.next || !pwForm.confirm) return toast.error('جميع الحقول مطلوبة');
-    if (pwForm.next !== pwForm.confirm) return toast.error('كلمتا المرور الجديدتان غير متطابقتين');
-    if (pwForm.next.length < 6) return toast.error('كلمة المرور الجديدة 6 أحرف على الأقل');
+    if (!pwForm.current || !pwForm.next || !pwForm.confirm) return toast.error(t('جميع الحقول مطلوبة', 'All fields are required'));
+    if (pwForm.next !== pwForm.confirm) return toast.error(t('كلمتا المرور الجديدتان غير متطابقتين', 'New passwords do not match'));
+    if (pwForm.next.length < 6) return toast.error(t('كلمة المرور الجديدة 6 أحرف على الأقل', 'New password must be at least 6 characters'));
     setPwSaving(true);
     try {
       const res = await fetch('/api/auth/change-password', {
@@ -62,14 +64,14 @@ export default function SettingsPage() {
         body: JSON.stringify({ currentPassword: pwForm.current, newPassword: pwForm.next }),
       });
       const data = await res.json();
-      if (res.ok) { toast.success('تم تغيير كلمة المرور'); setPwForm({ current: '', next: '', confirm: '' }); }
-      else toast.error(data.error || 'فشل تغيير كلمة المرور');
-    } catch { toast.error('حدث خطأ'); }
+      if (res.ok) { toast.success(t('تم تغيير كلمة المرور', 'Password changed')); setPwForm({ current: '', next: '', confirm: '' }); }
+      else toast.error(data.error || t('فشل تغيير كلمة المرور', 'Failed to change password'));
+    } catch { toast.error(t('حدث خطأ', 'An error occurred')); }
     finally { setPwSaving(false); }
   };
 
   const handleClear = async (collection: string, label: string) => {
-    if (!confirm(`هل أنت متأكد من حذف جميع ${label}؟ هذا الإجراء لا يمكن التراجع عنه.`)) return;
+    if (!confirm(t(`هل أنت متأكد من حذف جميع ${label}؟ هذا الإجراء لا يمكن التراجع عنه.`, `Delete all ${label}? This action cannot be undone.`))) return;
     setClearing(collection);
     try {
       const res = await fetch('/api/admin/clear', {
@@ -77,9 +79,9 @@ export default function SettingsPage() {
         body: JSON.stringify({ collection }),
       });
       const data = await res.json();
-      if (res.ok) toast.success(`تم حذف ${data.deleted} ${label}`);
-      else toast.error(data.error || 'فشل الحذف');
-    } catch { toast.error('حدث خطأ'); }
+      if (res.ok) toast.success(t(`تم حذف ${data.deleted} ${label}`, `Deleted ${data.deleted} ${label}`));
+      else toast.error(data.error || t('فشل الحذف', 'Delete failed'));
+    } catch { toast.error(t('حدث خطأ', 'An error occurred')); }
     finally { setClearing(null); }
   };
 
@@ -92,7 +94,7 @@ export default function SettingsPage() {
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       const data = await res.json();
       if (data.url) update(field, data.url);
-    } catch { toast.error('فشل رفع الصورة'); }
+    } catch { toast.error(t('فشل رفع الصورة', 'Image upload failed')); }
   };
 
   if (!settings) return <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-[#5B7B6D] border-t-transparent rounded-full" /></div>;
@@ -100,43 +102,43 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800">إعدادات المتجر</h1>
+        <h1 className="text-2xl font-bold text-gray-800">{t('إعدادات المتجر', 'Store Settings')}</h1>
         <button onClick={handleSave} disabled={saving}
           className="px-6 py-2 bg-[#5B7B6D] text-white rounded-xl text-sm font-medium hover:bg-[#4a6a5c] disabled:opacity-50">
-          {saving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+          {saving ? t('جاري الحفظ...', 'Saving...') : t('حفظ الإعدادات', 'Save settings')}
         </button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
-        <h2 className="text-lg font-bold text-gray-800 border-b pb-2">معلومات المتجر</h2>
+        <h2 className="text-lg font-bold text-gray-800 border-b pb-2">{t('معلومات المتجر', 'Store Info')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">اسم المتجر (عربي)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('اسم المتجر (عربي)', 'Store name (Arabic)')}</label>
             <input type="text" value={settings.storeName} onChange={(e) => update('storeName', e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">اسم المتجر (إنجليزي)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('اسم المتجر (إنجليزي)', 'Store name (English)')}</label>
             <input type="text" value={settings.storeNameEn} onChange={(e) => update('storeNameEn', e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" dir="ltr" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">الهاتف</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('الهاتف', 'Phone')}</label>
             <input type="text" value={settings.phone} onChange={(e) => update('phone', e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" dir="ltr" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">البريد الإلكتروني</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('البريد الإلكتروني', 'Email')}</label>
             <input type="email" value={settings.email} onChange={(e) => update('email', e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" dir="ltr" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">المدينة</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('المدينة', 'City')}</label>
             <input type="text" value={settings.city} onChange={(e) => update('city', e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">العنوان</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('العنوان', 'Address')}</label>
             <input type="text" value={settings.address} onChange={(e) => update('address', e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
           </div>
@@ -144,7 +146,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
-        <h2 className="text-lg font-bold text-gray-800 border-b pb-2">الضريبة واللغة</h2>
+        <h2 className="text-lg font-bold text-gray-800 border-b pb-2">{t('الضريبة واللغة', 'Tax & Language')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -152,19 +154,19 @@ export default function SettingsPage() {
                 onClick={() => update('vatEnabled', !settings.vatEnabled)}>
                 <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${settings.vatEnabled ? 'right-0.5' : 'left-0.5'}`} />
               </div>
-              <span className="text-sm">ضريبة القيمة المضافة</span>
+              <span className="text-sm">{t('ضريبة القيمة المضافة', 'Value Added Tax')}</span>
             </label>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">نسبة الضريبة (%)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('نسبة الضريبة (%)', 'Tax rate (%)')}</label>
             <input type="number" min="0" max="100" value={settings.vatPercentage} onChange={(e) => update('vatPercentage', parseInt(e.target.value) || 0)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">اللغة الافتراضية</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('اللغة الافتراضية', 'Default language')}</label>
             <select value={settings.defaultLanguage} onChange={(e) => update('defaultLanguage', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" title="اللغة">
-              <option value="ar">العربية</option>
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" title={t('اللغة', 'Language')}>
+              <option value="ar">{t('العربية', 'Arabic')}</option>
               <option value="en">English</option>
             </select>
           </div>
@@ -172,22 +174,22 @@ export default function SettingsPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
-        <h2 className="text-lg font-bold text-gray-800 border-b pb-2">إعدادات الفواتير</h2>
+        <h2 className="text-lg font-bold text-gray-800 border-b pb-2">{t('إعدادات الفواتير', 'Invoice Settings')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">بادئة الفاتورة (مثال: INV, فاتورة)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('بادئة الفاتورة (مثال: INV, فاتورة)', 'Invoice prefix (e.g. INV)')}</label>
             <input type="text" value={settings.invoicePrefix || 'INV'} onChange={(e) => update('invoicePrefix', e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" dir="ltr" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">رقم الفاتورة التالي</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('رقم الفاتورة التالي', 'Next invoice number')}</label>
             <input type="number" min="1" value={settings.invoiceNextNumber || 1} onChange={(e) => update('invoiceNextNumber', parseInt(e.target.value) || 1)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" dir="ltr" />
           </div>
         </div>
-        <p className="text-xs text-gray-400">مثال: {settings.invoicePrefix || 'INV'}-{String(settings.invoiceNextNumber || 1).padStart(4, '0')}</p>
+        <p className="text-xs text-gray-400">{t('مثال', 'Example')}: {settings.invoicePrefix || 'INV'}-{String(settings.invoiceNextNumber || 1).padStart(4, '0')}</p>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">رسالة واتساب التلقائية للفواتير</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('رسالة واتساب التلقائية للفواتير', 'Automatic WhatsApp invoice message')}</label>
           <textarea
             value={settings.invoiceWhatsappMessage || ''}
             onChange={(e) => update('invoiceWhatsappMessage', e.target.value)}
@@ -195,29 +197,29 @@ export default function SettingsPage() {
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm"
             dir="auto"
           />
-          <p className="text-xs text-gray-400 mt-2" dir="ltr">{`يمكنك استخدام: {customerName} {invoiceNumber} {date} {items} {discountLine} {vatLine} {total} {storeName} {storeNameEn}`}</p>
+          <p className="text-xs text-gray-400 mt-2" dir="ltr">{t('يمكنك استخدام', 'You can use')}: {`{customerName} {invoiceNumber} {date} {items} {discountLine} {vatLine} {total} {storeName} {storeNameEn}`}</p>
         </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
-        <h2 className="text-lg font-bold text-gray-800 border-b pb-2">الشعار والبانر</h2>
+        <h2 className="text-lg font-bold text-gray-800 border-b pb-2">{t('الشعار والبانر', 'Logo & Banner')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">شعار المتجر</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('شعار المتجر', 'Store logo')}</label>
             <div className="flex items-center gap-4">
               {settings.logo && <div className="w-20 h-20 relative rounded-lg overflow-hidden border"><Image src={settings.logo} alt="Logo" fill className="object-cover" /></div>}
               <label className="px-4 py-2 border border-gray-300 rounded-xl text-sm cursor-pointer hover:bg-gray-50 flex items-center gap-2">
-                <FiUpload size={14} /> رفع شعار
+                <FiUpload size={14} /> {t('رفع شعار', 'Upload logo')}
                 <input type="file" accept="image/*" onChange={(e) => handleUpload(e, 'logo')} className="hidden" />
               </label>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">بانر المتجر</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('بانر المتجر', 'Store banner')}</label>
             <div className="flex items-center gap-4">
               {settings.banner && <div className="w-32 h-20 relative rounded-lg overflow-hidden border"><Image src={settings.banner} alt="Banner" fill className="object-cover" /></div>}
               <label className="px-4 py-2 border border-gray-300 rounded-xl text-sm cursor-pointer hover:bg-gray-50 flex items-center gap-2">
-                <FiUpload size={14} /> رفع بانر
+                <FiUpload size={14} /> {t('رفع بانر', 'Upload banner')}
                 <input type="file" accept="image/*" onChange={(e) => handleUpload(e, 'banner')} className="hidden" />
               </label>
             </div>
@@ -226,10 +228,14 @@ export default function SettingsPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
-        <h2 className="text-lg font-bold text-gray-800 border-b pb-2">تغيير كلمة المرور</h2>
+        <h2 className="text-lg font-bold text-gray-800 border-b pb-2">{t('تغيير كلمة المرور', 'Change Password')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {(['current', 'next', 'confirm'] as const).map((field) => {
-            const labels = { current: 'كلمة المرور الحالية', next: 'كلمة المرور الجديدة', confirm: 'تأكيد كلمة المرور الجديدة' };
+            const labels = {
+              current: t('كلمة المرور الحالية', 'Current password'),
+              next: t('كلمة المرور الجديدة', 'New password'),
+              confirm: t('تأكيد كلمة المرور الجديدة', 'Confirm new password'),
+            };
             return (
               <div key={field}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{labels[field]}</label>
@@ -248,28 +254,28 @@ export default function SettingsPage() {
         </div>
         <button onClick={handleChangePassword} disabled={pwSaving}
           className="px-6 py-2 bg-[#5B7B6D] text-white rounded-xl text-sm font-medium hover:bg-[#4a6a5c] disabled:opacity-50">
-          {pwSaving ? 'جاري التغيير...' : 'تغيير كلمة المرور'}
+          {pwSaving ? t('جاري التغيير...', 'Changing...') : t('تغيير كلمة المرور', 'Change password')}
         </button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6 space-y-4">
         <div className="flex items-center gap-2">
           <FiAlertTriangle className="text-red-500" size={20} />
-          <h2 className="text-lg font-bold text-red-600">منطقة الخطر</h2>
+          <h2 className="text-lg font-bold text-red-600">{t('منطقة الخطر', 'Danger Zone')}</h2>
         </div>
-        <p className="text-sm text-gray-500">هذه الإجراءات لا يمكن التراجع عنها. تأكد قبل المتابعة.</p>
+        <p className="text-sm text-gray-500">{t('هذه الإجراءات لا يمكن التراجع عنها. تأكد قبل المتابعة.', 'These actions cannot be undone. Be sure before continuing.')}</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
-            { collection: 'invoices', label: 'الفواتير', desc: 'حذف جميع الفواتير من قاعدة البيانات' },
-            { collection: 'orders', label: 'الطلبات', desc: 'حذف جميع الطلبات من قاعدة البيانات' },
-            { collection: 'customers', label: 'العملاء', desc: 'حذف جميع العملاء من قاعدة البيانات' },
-          ].map(({ collection, label, desc }) => (
+            { collection: 'invoices', label: t('الفواتير', 'invoices'), desc: t('حذف جميع الفواتير من قاعدة البيانات', 'Delete all invoices from the database') },
+            { collection: 'orders', label: t('الطلبات', 'orders'), desc: t('حذف جميع الطلبات من قاعدة البيانات', 'Delete all orders from the database') },
+            { collection: 'customers', label: t('العملاء', 'customers'), desc: t('حذف جميع العملاء من قاعدة البيانات', 'Delete all customers from the database') },
+          ].map(({ collection, label, desc }) => (  
             <div key={collection} className="border border-red-100 rounded-xl p-4 bg-red-50">
-              <p className="font-semibold text-gray-800 text-sm mb-1">مسح {label}</p>
+              <p className="font-semibold text-gray-800 text-sm mb-1">{t('مسح', 'Clear')} {label}</p>
               <p className="text-xs text-gray-500 mb-3">{desc}</p>
               <button onClick={() => handleClear(collection, label)} disabled={clearing === collection}
                 className="w-full px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
-                {clearing === collection ? 'جاري الحذف...' : `حذف كل ${label}`}
+                {clearing === collection ? t('جاري الحذف...', 'Deleting...') : t(`حذف كل ${label}`, `Delete all ${label}`)}
               </button>
             </div>
           ))}
@@ -277,7 +283,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
-        <h2 className="text-lg font-bold text-gray-800 border-b pb-2">وسائل التواصل الاجتماعي</h2>
+        <h2 className="text-lg font-bold text-gray-800 border-b pb-2">{t('وسائل التواصل الاجتماعي', 'Social Media')}</h2>
         <div className="space-y-4">
           {[
             { key: 'instagram' as keyof Settings, enabledKey: 'instagramEnabled' as keyof Settings, label: 'Instagram', icon: <FaInstagram className="text-pink-600" />, color: 'bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400' },
@@ -296,7 +302,7 @@ export default function SettingsPage() {
                 <span className="text-sm flex items-center gap-1.5">{social.icon} {social.label}</span>
               </label>
               <input type="text" value={settings[social.key] as string || ''} onChange={(e) => update(social.key, e.target.value)}
-                placeholder={`اسم المستخدم أو الرابط`}
+                placeholder={t('اسم المستخدم أو الرابط', 'Username or URL')}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#5B7B6D] outline-none text-sm" dir="ltr" />
             </div>
           ))}

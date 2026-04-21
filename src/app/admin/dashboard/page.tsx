@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FiShoppingCart, FiPackage, FiUsers, FiFileText, FiDollarSign } from 'react-icons/fi';
 import { formatCurrency, formatDateShort, getStatusColor, getStatusLabel } from '@/lib/utils';
 import SarIcon from '@/components/SarIcon';
+import { useT } from '@/lib/i18n';
 
 interface DashboardData {
   stats: { totalOrders: number; totalProducts: number; totalCustomers: number; totalInvoices: number; totalRevenue: number };
@@ -13,6 +14,7 @@ interface DashboardData {
 }
 
 export default function DashboardPage() {
+  const t = useT();
   const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
@@ -24,16 +26,16 @@ export default function DashboardPage() {
   }
 
   const statCards = [
-    { label: 'إجمالي الطلبات', value: data.stats.totalOrders, icon: FiShoppingCart, color: 'bg-blue-50 text-blue-600' },
-    { label: 'المنتجات', value: data.stats.totalProducts, icon: FiPackage, color: 'bg-green-50 text-green-600' },
-    { label: 'العملاء', value: data.stats.totalCustomers, icon: FiUsers, color: 'bg-purple-50 text-purple-600' },
-    { label: 'الفواتير', value: data.stats.totalInvoices, icon: FiFileText, color: 'bg-orange-50 text-orange-600' },
-    { label: 'إجمالي الإيرادات', value: formatCurrency(data.stats.totalRevenue), icon: FiDollarSign, color: 'bg-emerald-50 text-emerald-600', isCurrency: true },
+    { label: t('إجمالي الطلبات', 'Total orders'), value: data.stats.totalOrders, icon: FiShoppingCart, color: 'bg-blue-50 text-blue-600' },
+    { label: t('المنتجات', 'Products'), value: data.stats.totalProducts, icon: FiPackage, color: 'bg-green-50 text-green-600' },
+    { label: t('العملاء', 'Customers'), value: data.stats.totalCustomers, icon: FiUsers, color: 'bg-purple-50 text-purple-600' },
+    { label: t('الفواتير', 'Invoices'), value: data.stats.totalInvoices, icon: FiFileText, color: 'bg-orange-50 text-orange-600' },
+    { label: t('إجمالي الإيرادات', 'Total revenue'), value: formatCurrency(data.stats.totalRevenue), icon: FiDollarSign, color: 'bg-emerald-50 text-emerald-600', isCurrency: true },
   ];
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800">لوحة التحكم</h1>
+      <h1 className="text-2xl font-bold text-gray-800">{t('لوحة التحكم', 'Dashboard')}</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {statCards.map((card) => (
@@ -50,11 +52,11 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm border p-4">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-800">آخر الطلبات</h2>
-            <Link href="/admin/dashboard/orders" className="text-sm text-[#5B7B6D] hover:underline">عرض الكل</Link>
+            <h2 className="text-lg font-bold text-gray-800">{t('آخر الطلبات', 'Latest orders')}</h2>
+            <Link href="/admin/dashboard/orders" className="text-sm text-[#5B7B6D] hover:underline">{t('عرض الكل', 'View all')}</Link>
           </div>
           {data.recentOrders.length === 0 ? (
-            <p className="text-gray-400 text-center py-8">لا توجد طلبات</p>
+            <p className="text-gray-400 text-center py-8">{t('لا توجد طلبات', 'No orders yet')}</p>
           ) : (
             <div className="space-y-3">
               {data.recentOrders.map((order) => (
@@ -75,11 +77,11 @@ export default function DashboardPage() {
 
         <div className="bg-white rounded-xl shadow-sm border p-4">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-800">آخر الفواتير</h2>
-            <Link href="/admin/dashboard/invoices" className="text-sm text-[#5B7B6D] hover:underline">عرض الكل</Link>
+            <h2 className="text-lg font-bold text-gray-800">{t('آخر الفواتير', 'Latest invoices')}</h2>
+            <Link href="/admin/dashboard/invoices" className="text-sm text-[#5B7B6D] hover:underline">{t('عرض الكل', 'View all')}</Link>
           </div>
           {data.recentInvoices.length === 0 ? (
-            <p className="text-gray-400 text-center py-8">لا توجد فواتير</p>
+            <p className="text-gray-400 text-center py-8">{t('لا توجد فواتير', 'No invoices yet')}</p>
           ) : (
             <div className="space-y-3">
               {data.recentInvoices.map((inv) => (

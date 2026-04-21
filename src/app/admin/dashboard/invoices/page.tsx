@@ -7,6 +7,7 @@ import { FaWhatsapp } from 'react-icons/fa6';
 import { formatCurrency, formatDateShort } from '@/lib/utils';
 import SarIcon from '@/components/SarIcon';
 import { buildInvoiceWhatsAppMessage } from '@/lib/invoiceWhatsApp';
+import { useT } from '@/lib/i18n';
 
 interface Invoice {
   _id: string;
@@ -31,6 +32,7 @@ interface SettingsData {
 }
 
 export default function InvoicesPage() {
+  const t = useT();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,15 +62,15 @@ export default function InvoicesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800">الفواتير</h1>
+        <h1 className="text-2xl font-bold text-gray-800">{t('الفواتير', 'Invoices')}</h1>
         <Link href="/admin/dashboard/invoices/create" className="flex items-center gap-2 px-4 py-2 bg-[#5B7B6D] text-white rounded-xl text-sm font-medium hover:bg-[#4a6a5c] transition-colors">
-          <FiPlus size={16} /> إنشاء فاتورة
+          <FiPlus size={16} /> {t('إنشاء فاتورة', 'Create invoice')}
         </Link>
       </div>
 
       {invoices.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border p-12 text-center text-gray-400">
-          <p className="text-lg">لا توجد فواتير بعد</p>
+          <p className="text-lg">{t('لا توجد فواتير بعد', 'No invoices yet')}</p>
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
@@ -76,11 +78,11 @@ export default function InvoicesPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">رقم الفاتورة</th>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">العميل</th>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">المجموع</th>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">التاريخ</th>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">إجراءات</th>
+                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">{t('رقم الفاتورة', 'Invoice #')}</th>
+                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">{t('العميل', 'Customer')}</th>
+                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">{t('المجموع', 'Total')}</th>
+                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">{t('التاريخ', 'Date')}</th>
+                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">{t('إجراءات', 'Actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -92,9 +94,9 @@ export default function InvoicesPage() {
                     <td className="px-4 py-3 text-sm text-gray-500">{formatDateShort(inv.createdAt)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <Link href={`/admin/dashboard/invoices/${inv._id}`} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title="عرض"><FiEye size={16} /></Link>
-                        <Link href={`/admin/dashboard/invoices/${inv._id}?print=true`} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg" title="طباعة"><FiPrinter size={16} /></Link>
-                        <a href={getWhatsAppUrl(inv)} target="_blank" rel="noopener noreferrer" className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg" title="واتساب"><FaWhatsapp size={16} /></a>
+                        <Link href={`/admin/dashboard/invoices/${inv._id}`} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title={t('عرض', 'View')}><FiEye size={16} /></Link>
+                        <Link href={`/admin/dashboard/invoices/${inv._id}?print=true`} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg" title={t('طباعة', 'Print')}><FiPrinter size={16} /></Link>
+                        <a href={getWhatsAppUrl(inv)} target="_blank" rel="noopener noreferrer" className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg" title={t('واتساب', 'WhatsApp')}><FaWhatsapp size={16} /></a>
                       </div>
                     </td>
                   </tr>
