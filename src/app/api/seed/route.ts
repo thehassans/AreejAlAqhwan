@@ -12,14 +12,19 @@ export async function GET() {
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@areej.com';
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
+    const hashedPassword = await bcrypt.hash(adminPassword, 12);
     const existingAdmin = await Admin.findOne({ email: adminEmail });
     if (!existingAdmin) {
-      const hashedPassword = await bcrypt.hash(adminPassword, 12);
       await Admin.create({
         name: adminName,
         email: adminEmail,
         password: hashedPassword,
       });
+    } else {
+      // Sync existing admin with env values (name + password)
+      existingAdmin.name = adminName;
+      existingAdmin.password = hashedPassword;
+      await existingAdmin.save();
     }
 
     const existingSettings = await Settings.findOne();
