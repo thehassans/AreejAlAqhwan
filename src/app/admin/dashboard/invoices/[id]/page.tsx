@@ -69,6 +69,8 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
   const settingsRef = useRef<SettingsData | null>(null);
   const qrRef = useRef<string>('');
   const logoRef = useRef<string>('');
+  const autoPrintHandledRef = useRef(false);
+  const autoShareHandledRef = useRef(false);
 
   // Convert logo to data URL for PDF/print
   useEffect(() => {
@@ -288,7 +290,22 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
     }
   }, [invoice, generatePdfBlob, buildWaMessage, buildWaUrl, t]);
 
+  const clearAutoActionParam = useCallback((paramName: 'print' | 'share') => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete(paramName);
+    const nextSearch = url.searchParams.toString();
+    const nextUrl = `${url.pathname}${nextSearch ? `?${nextSearch}` : ''}${url.hash}`;
+    window.history.replaceState(window.history.state, '', nextUrl);
+  }, []);
+
   useEffect(() => {
+    autoPrintHandledRef.current = false;
+    autoShareHandledRef.current = false;
+  }, [id]);
+
+  useEffect(() => {
+    setLoading(true);
     Promise.all([
       fetch(`/api/invoices/${id}`).then((r) => r.json()),
       fetch('/api/settings').then((r) => r.json()),
@@ -298,15 +315,30 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
       invoiceRef.current = inv;
       settingsRef.current = sett;
       setLoading(false);
-      if (searchParams.get('print') === 'true') {
-        setTimeout(() => handlePrintFn(), 800);
-      }
-      if (searchParams.get('share') === 'whatsapp') {
-        // Wait for the receipt DOM, logo and QR to finish rendering before snapshotting the PDF
-        setTimeout(() => handleWhatsAppShare(), 1200);
-      }
     }).catch(() => setLoading(false));
-  }, [id, searchParams, handlePrintFn, handleWhatsAppShare]);
+  }, [id]);
+
+  useEffect(() => {
+    if (loading || !invoice) return;
+
+    const timeouts: number[] = [];
+
+    if (searchParams.get('print') === 'true' && !autoPrintHandledRef.current) {
+      autoPrintHandledRef.current = true;
+      clearAutoActionParam('print');
+      timeouts.push(window.setTimeout(() => handlePrintFn(), 800));
+    }
+
+    if (searchParams.get('share') === 'whatsapp' && !autoShareHandledRef.current) {
+      autoShareHandledRef.current = true;
+      clearAutoActionParam('share');
+      timeouts.push(window.setTimeout(() => handleWhatsAppShare(), 1200));
+    }
+
+    return () => {
+      timeouts.forEach((timeoutId) => window.clearTimeout(timeoutId));
+    };
+  }, [clearAutoActionParam, handlePrintFn, handleWhatsAppShare, invoice, loading, searchParams]);
 
   if (loading || !invoice) {
     return <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-[#5B7B6D] border-t-transparent rounded-full" /></div>;
