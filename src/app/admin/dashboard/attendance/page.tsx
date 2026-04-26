@@ -6,12 +6,23 @@ import QRCode from 'qrcode';
 import toast from 'react-hot-toast';
 import { useT, useLocale } from '@/lib/i18n';
 
+type AttendanceOverviewStatus = 'absent' | 'checked_in' | 'checked_out';
+
+interface EmployeeOverviewItem {
+  worker: Worker;
+  record?: AttendanceRecord;
+  status: AttendanceOverviewStatus;
+}
+
 interface AttendanceRecord {
   _id: string;
   workerName: string;
   workerId: string;
   date: string;
   checkInTime: string;
+  checkOutTime?: string | null;
+  workedMinutes?: number;
+  status?: 'checked_in' | 'checked_out';
   method: 'qr';
   createdAt: string;
 }
@@ -45,6 +56,7 @@ export default function AttendancePage() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanSuccess, setScanSuccess] = useState(false);
+  const [scanAction, setScanAction] = useState<'check_in' | 'check_out' | null>(null);
   const [scanError, setScanError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -116,6 +128,7 @@ export default function AttendancePage() {
     stopCamera();
     setScannerOpen(false);
     setScanSuccess(false);
+    setScanAction(null);
     setScanError('');
     scannedRef.current = false;
   }, [stopCamera]);
@@ -136,8 +149,13 @@ export default function AttendancePage() {
       if (!res.ok) {
         setScanError(data.error || t('فشل تسجيل الحضور', 'Attendance failed'));
       } else {
+        setScanAction(data.action === 'check_out' ? 'check_out' : 'check_in');
         setScanSuccess(true);
-        toast.success(t('تم تسجيل حضورك بنجاح! ✓', 'Attendance recorded successfully! ✓'));
+        toast.success(
+          data.action === 'check_out'
+            ? t('تم تسجيل الانصراف بنجاح! ✓', 'Departure recorded successfully! ✓')
+            : t('تم تسجيل الحضور بنجاح! ✓', 'Arrival recorded successfully! ✓')
+        );
         fetchData();
         setTimeout(() => closeScanner(), 2500);
       }
@@ -213,20 +231,48 @@ export default function AttendancePage() {
     r.workerName.toLowerCase().includes(search.toLowerCase())
   );
 
-  const todayCount = records.filter(r => r.date === today).length;
-  const qrCount = records.filter(r => r.method === 'qr').length;
+  const overviewDate = filterDate || today;
+  const overviewRecords = overviewDate ? records.filter((r: AttendanceRecord) => r.date === overviewDate) : [];
 
   const fmtDate = (d: string) => {
     const parts = d.split('-');
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
   };
 
+  const fmtDuration = (minutes?: number) => {
+    if (!minutes || minutes <= 0) return '--';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  };
+
   const isWorker = authUser?.role === 'worker';
-  const todayAlreadyMarked = isWorker && records.some(r => r.workerId === authUser?.id && r.date === today);
+  const todayRecord = isWorker ? records.find((r: AttendanceRecord) => r.workerId === authUser?.id && r.date === today) || null : null;
+  const todayAlreadyMarked = !!todayRecord;
+  const todayHasDeparted = !!todayRecord?.checkOutTime;
+  const nextAttendanceAction = todayAlreadyMarked && !todayHasDeparted
+    ? t('مسح رمز QR للانصراف', 'Scan QR to check out')
+    : t('مسح رمز QR للحضور', 'Scan QR to check in');
+  const overviewByWorkerId = new Map<string, AttendanceRecord>(overviewRecords.map((record: AttendanceRecord) => [record.workerId, record]));
+  const overviewWorkers = workers.filter((worker: Worker) => (!filterWorker || worker._id === filterWorker) && worker.name.toLowerCase().includes(search.toLowerCase()));
+  const employeeOverview: EmployeeOverviewItem[] = overviewWorkers
+    .map((worker: Worker) => {
+      const record = overviewByWorkerId.get(worker._id);
+      const status: AttendanceOverviewStatus = !record ? 'absent' : record.checkOutTime ? 'checked_out' : 'checked_in';
+      return { worker, record, status };
+    })
+    .sort((a: EmployeeOverviewItem, b: EmployeeOverviewItem) => {
+      const rank: Record<AttendanceOverviewStatus, number> = { checked_in: 0, checked_out: 1, absent: 2 };
+      return rank[a.status] - rank[b.status] || a.worker.name.localeCompare(b.worker.name);
+    });
+  const overviewArrivalCount = employeeOverview.filter((item: EmployeeOverviewItem) => item.status !== 'absent').length;
+  const overviewDepartureCount = employeeOverview.filter((item: EmployeeOverviewItem) => item.status === 'checked_out').length;
+  const overviewInsideCount = employeeOverview.filter((item: EmployeeOverviewItem) => item.status === 'checked_in').length;
+  const overviewAbsentCount = employeeOverview.filter((item: EmployeeOverviewItem) => item.status === 'absent').length;
+  const overviewDateLabel = overviewDate ? fmtDate(overviewDate) : '--';
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">{t('سجل الحضور', 'Attendance log')}</h1>
@@ -248,33 +294,62 @@ export default function AttendancePage() {
               </div>
               <div>
                 <p className="font-bold text-lg">{t('مرحباً،', 'Welcome,')} {authUser?.name}</p>
-                <p className="text-white/70 text-sm">{t('سجّل حضورك اليومي بمسح رمز QR', 'Record your daily attendance by scanning the QR code')}</p>
+                <p className="text-white/70 text-sm">{t('استخدم نفس رمز QR لتسجيل الحضور أولاً ثم الانصراف لاحقاً', 'Use the same daily QR to record arrival first, then departure later')}</p>
               </div>
             </div>
           </div>
           <div className="p-6 flex flex-col items-center gap-4">
-            {todayAlreadyMarked ? (
+            {todayAlreadyMarked && todayHasDeparted ? (
               <div className="flex flex-col items-center gap-3 py-4">
                 <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center">
                   <FiCheckCircle size={40} className="text-emerald-500" />
                 </div>
                 <div>
                   <p className="text-xl font-bold text-gray-800">{t('أريج الأقحوان', 'Areej Al Aqhwan')} ✅</p>
-                  <p className="text-sm text-emerald-600 font-semibold">{t('تم تسجيل حضورك اليوم', 'Your attendance for today is recorded')}</p>
+                  <p className="text-sm text-emerald-600 font-semibold">{t('تم تسجيل الحضور والانصراف اليوم', 'Your arrival and departure are recorded for today')}</p>
                   <p className="text-sm text-gray-500">
-                    {t('وقت الحضور بتوقيت السعودية', 'Check-in time (Saudi)')}: <span dir="ltr" className="font-semibold">{records.find(r => r.workerId === authUser?.id && r.date === today)?.checkInTime}</span>
+                    {t('وقت الحضور بتوقيت السعودية', 'Arrival time (Saudi)')}: <span dir="ltr" className="font-semibold">{todayRecord?.checkInTime}</span>
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {t('وقت الانصراف بتوقيت السعودية', 'Departure time (Saudi)')}: <span dir="ltr" className="font-semibold">{todayRecord?.checkOutTime}</span>
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {t('مدة الدوام', 'Worked duration')}: <span dir="ltr" className="font-semibold">{fmtDuration(todayRecord?.workedMinutes)}</span>
                   </p>
                 </div>
               </div>
+            ) : todayAlreadyMarked ? (
+              <>
+                <div className="flex flex-col items-center gap-3 py-2 text-center">
+                  <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center">
+                    <FiClock size={40} className="text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-gray-800">{t('تم تسجيل الحضور', 'Arrival recorded')}</p>
+                    <p className="text-sm text-amber-600 font-semibold">{t('باقي تسجيل الانصراف قبل نهاية اليوم', 'Departure still needs to be recorded before the end of the day')}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {t('وقت الحضور بتوقيت السعودية', 'Arrival time (Saudi)')}: <span dir="ltr" className="font-semibold">{todayRecord?.checkInTime}</span>
+                    </p>
+                  </div>
+                </div>
+                <p className="text-gray-500 text-sm text-center">{t('عند الانتهاء من الدوام، امسح نفس رمز QR لتسجيل الانصراف', 'At the end of the shift, scan the same daily QR to record departure')}</p>
+                <button
+                  onClick={() => setScannerOpen(true)}
+                  className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-2xl text-lg font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+                >
+                  <FiCamera size={24} />
+                  {nextAttendanceAction}
+                </button>
+              </>
             ) : (
               <>
-                <p className="text-gray-500 text-sm text-center">{t('اضغط على الزر لفتح الكاميرا ومسح رمز QR اليومي', 'Tap the button to open the camera and scan today’s QR code')}</p>
+                <p className="text-gray-500 text-sm text-center">{t('اضغط على الزر لفتح الكاميرا ومسح رمز QR اليومي لتسجيل الحضور', 'Tap the button to open the camera and scan today’s QR code to record arrival')}</p>
                 <button
                   onClick={() => setScannerOpen(true)}
                   className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-[#2C3E35] to-[#5B7B6D] text-white rounded-2xl text-lg font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
                 >
                   <FiCamera size={24} />
-                  {t('مسح رمز QR للحضور', 'Scan QR to check in')}
+                  {nextAttendanceAction}
                 </button>
               </>
             )}
@@ -284,15 +359,26 @@ export default function AttendancePage() {
 
       {/* ── ADMIN STATS ─────────────────────────────────────── */}
       {!isWorker && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
                 <FiCheckCircle size={20} className="text-emerald-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-800">{todayCount}</p>
-                <p className="text-xs text-gray-500">{t('حضور اليوم', 'Today’s attendance')}</p>
+                <p className="text-2xl font-bold text-gray-800">{overviewArrivalCount}</p>
+                <p className="text-xs text-gray-500">{t('تسجيلات الحضور', 'Arrivals')}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+                <FiClock size={20} className="text-amber-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-800">{overviewInsideCount}</p>
+                <p className="text-xs text-gray-500">{t('داخل الدوام', 'On shift')}</p>
               </div>
             </div>
           </div>
@@ -302,21 +388,128 @@ export default function AttendancePage() {
                 <FiSmartphone size={20} className="text-blue-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-800">{qrCount}</p>
-                <p className="text-xs text-gray-500">{t('عبر QR', 'Via QR')}</p>
+                <p className="text-2xl font-bold text-gray-800">{overviewDepartureCount}</p>
+                <p className="text-xs text-gray-500">{t('تسجيلات الانصراف', 'Departures')}</p>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 col-span-2 sm:col-span-1">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 col-span-2 xl:col-span-1">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
-                <FiCalendar size={20} className="text-amber-500" />
+              <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center">
+                <FiUser size={20} className="text-rose-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-800">{workers.length}</p>
-                <p className="text-xs text-gray-500">{t('إجمالي الموظفين', 'Total employees')}</p>
+                <p className="text-2xl font-bold text-gray-800">{overviewAbsentCount}</p>
+                <p className="text-xs text-gray-500">{t('غائبون', 'Absent')}</p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {!isWorker && (
+        <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-slate-900 via-[#2C3E35] to-[#5B7B6D] px-6 py-6 text-white">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.32em] text-white/60 mb-2">{t('لوحة الحضور', 'Attendance board')}</p>
+                <h2 className="text-2xl font-bold">{t('حالة كل موظف', 'Attendance for each employee')}</h2>
+                <p className="text-sm text-white/70 mt-1">{t('عرض مباشر يوضح من حضر، من لا يزال في الدوام، ومن أكمل الانصراف', 'A live overview showing who arrived, who is still on shift, and who completed departure')}</p>
+              </div>
+              <div className="rounded-2xl bg-white/10 backdrop-blur px-4 py-3 min-w-[180px]">
+                <p className="text-xs text-white/60 mb-1">{t('التاريخ المعروض', 'Viewing date')}</p>
+                <p className="text-base font-bold" dir="ltr">{overviewDateLabel}</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6">
+            {employeeOverview.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50/70 px-6 py-14 text-center">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-white shadow-sm border border-gray-100 flex items-center justify-center mb-4">
+                  <FiCalendar size={28} className="text-gray-300" />
+                </div>
+                <p className="text-base font-semibold text-gray-600">{t('لا يوجد موظفون مطابقون للفلاتر الحالية', 'No employees match the current filters')}</p>
+                <p className="text-sm text-gray-400 mt-1">{t('جرّب إزالة البحث أو اختيار موظف مختلف', 'Try clearing the search or choosing a different employee')}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {employeeOverview.map(({ worker, record, status }) => (
+                  <div
+                    key={worker._id}
+                    className={`rounded-[26px] border p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl ${
+                      status === 'checked_in'
+                        ? 'border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50'
+                        : status === 'checked_out'
+                          ? 'border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-teal-50'
+                          : 'border-rose-200 bg-gradient-to-br from-rose-50 via-white to-pink-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-bold shrink-0 ${
+                          status === 'checked_in'
+                            ? 'bg-amber-100 text-amber-700'
+                            : status === 'checked_out'
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-rose-100 text-rose-700'
+                        }`}>
+                          {worker.name.charAt(0)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-base font-bold text-gray-800 truncate">{worker.name}</p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {record ? t('تم التسجيل عبر QR', 'Recorded via QR') : t('لا يوجد تسجيل لهذا التاريخ', 'No record for this date')}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${
+                        status === 'checked_in'
+                          ? 'bg-amber-100 text-amber-700'
+                          : status === 'checked_out'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-rose-100 text-rose-700'
+                      }`}>
+                        <span className={`w-2 h-2 rounded-full ${
+                          status === 'checked_in'
+                            ? 'bg-amber-500'
+                            : status === 'checked_out'
+                              ? 'bg-emerald-500'
+                              : 'bg-rose-500'
+                        }`} />
+                        {status === 'checked_in'
+                          ? t('داخل الدوام', 'On shift')
+                          : status === 'checked_out'
+                            ? t('مكتمل', 'Completed')
+                            : t('غائب', 'Absent')}
+                      </span>
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-3 gap-2.5">
+                      <div className="rounded-2xl bg-white/80 border border-white px-3 py-3">
+                        <p className="text-[11px] font-medium text-gray-400 mb-1">{t('الحضور', 'Arrival')}</p>
+                        <p className="text-sm font-bold text-gray-800" dir="ltr">{record?.checkInTime || '--'}</p>
+                      </div>
+                      <div className="rounded-2xl bg-white/80 border border-white px-3 py-3">
+                        <p className="text-[11px] font-medium text-gray-400 mb-1">{t('الانصراف', 'Departure')}</p>
+                        <p className="text-sm font-bold text-gray-800" dir="ltr">{record?.checkOutTime || '--'}</p>
+                      </div>
+                      <div className="rounded-2xl bg-white/80 border border-white px-3 py-3">
+                        <p className="text-[11px] font-medium text-gray-400 mb-1">{t('المدة', 'Duration')}</p>
+                        <p className="text-sm font-bold text-gray-800" dir="ltr">{fmtDuration(record?.workedMinutes)}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 rounded-2xl border border-white bg-white/70 px-4 py-3 text-sm font-medium text-gray-600">
+                      {status === 'checked_in'
+                        ? t('الموظف داخل الدوام حالياً ولم يسجل الانصراف بعد', 'This employee is currently on shift and has not checked out yet')
+                        : status === 'checked_out'
+                          ? t('تم تسجيل الحضور والانصراف لهذا الموظف بنجاح', 'Arrival and departure have been fully recorded for this employee')
+                          : t('لا يوجد تسجيل حضور لهذا الموظف في التاريخ المعروض', 'No attendance has been recorded for this employee on the selected date')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -425,7 +618,10 @@ export default function AttendancePage() {
                     <tr className="bg-gray-50 border-b border-gray-100">
                       {!isWorker && <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('الموظف', 'Employee')}</th>}
                       <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('التاريخ', 'Date')}</th>
-                      <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('وقت الحضور (السعودية)', 'Check-in time (Saudi)')}</th>
+                      <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('وقت الحضور', 'Arrival')}</th>
+                      <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('وقت الانصراف', 'Departure')}</th>
+                      <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('مدة الدوام', 'Duration')}</th>
+                      <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('الحالة', 'Status')}</th>
                       <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('الطريقة', 'Method')}</th>
                     </tr>
                   </thead>
@@ -448,6 +644,13 @@ export default function AttendancePage() {
                             <FiClock size={13} className="text-gray-400" />
                             <span dir="ltr">{record.checkInTime}</span>
                           </div>
+                        </td>
+                        <td className="px-5 py-4 text-sm text-gray-600" dir="ltr">{record.checkOutTime || '--'}</td>
+                        <td className="px-5 py-4 text-sm text-gray-600" dir="ltr">{fmtDuration(record.workedMinutes)}</td>
+                        <td className="px-5 py-4">
+                          <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-semibold ${record.checkOutTime ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                            {record.checkOutTime ? t('مكتمل', 'Completed') : t('داخل الدوام', 'Checked in')}
+                          </span>
                         </td>
                         <td className="px-5 py-4">
                           <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-semibold bg-blue-50 text-blue-600">
@@ -472,7 +675,7 @@ export default function AttendancePage() {
             <div className="bg-gradient-to-r from-[#2C3E35] to-[#5B7B6D] px-5 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2 text-white">
                 <FiCamera size={20} />
-                <span className="font-bold">{t('مسح رمز QR', 'Scan QR code')}</span>
+                <span className="font-bold">{todayAlreadyMarked && !todayHasDeparted ? t('مسح رمز QR للانصراف', 'Scan QR for departure') : t('مسح رمز QR للحضور', 'Scan QR for arrival')}</span>
               </div>
               <button onClick={closeScanner} className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all">
                 <FiX size={16} />
@@ -486,7 +689,11 @@ export default function AttendancePage() {
                     <FiCheckCircle size={48} className="text-emerald-500" />
                   </div>
                   <p className="text-xl font-bold text-gray-800">{t('أريج الأقحوان', 'Areej Al Aqhwan')} ✅</p>
-                  <p className="text-sm text-emerald-600 font-semibold text-center">{t('تم تسجيل حضورك بنجاح', 'Your attendance was recorded successfully')}</p>
+                  <p className="text-sm text-emerald-600 font-semibold text-center">
+                    {scanAction === 'check_out'
+                      ? t('تم تسجيل انصرافك بنجاح', 'Your departure was recorded successfully')
+                      : t('تم تسجيل حضورك بنجاح', 'Your arrival was recorded successfully')}
+                  </p>
                 </div>
               ) : scanError ? (
                 <div className="flex flex-col items-center gap-4 py-4 w-full">
@@ -530,7 +737,7 @@ export default function AttendancePage() {
                       </div>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500 text-center">{t('وجّه الكاميرا نحو رمز QR اليومي المعروض', 'Point the camera at today’s QR code on screen')}</p>
+                  <p className="text-sm text-gray-500 text-center">{todayAlreadyMarked && !todayHasDeparted ? t('وجّه الكاميرا نحو رمز QR اليومي لتسجيل الانصراف', 'Point the camera at today’s QR code to record departure') : t('وجّه الكاميرا نحو رمز QR اليومي لتسجيل الحضور', 'Point the camera at today’s QR code to record arrival')}</p>
                 </>
               )}
             </div>
