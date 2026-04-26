@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-const QR_SECRET = process.env.QR_SECRET || 'areej-qr-attendance-secret-2024';
+const QR_SECRET = process.env.QR_SECRET || process.env.JWT_SECRET || 'areej-qr-attendance-secret-2024';
 
 export function generateDailyQRValue(date: string): string {
   const hmac = crypto.createHmac('sha256', QR_SECRET);
@@ -22,7 +22,9 @@ export function validateQRCode(qrValue: string): { valid: boolean; date: string;
   const providedDigest = match[2];
   const expected = generateDailyQRValue(date);
   const expectedDigest = expected.split('-').pop();
-  if (providedDigest !== expectedDigest) {
+  const providedBuffer = Buffer.from(providedDigest);
+  const expectedBuffer = Buffer.from(expectedDigest || '');
+  if (providedBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(providedBuffer, expectedBuffer)) {
     return { valid: false, date, message: 'رمز QR غير صحيح' };
   }
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Riyadh' }).format(new Date());

@@ -7,6 +7,8 @@ import { useT, useLocale } from '@/lib/i18n';
 
 type ScanState = 'idle' | 'scanning' | 'success' | 'error';
 
+const REQUIRED_QR_STREAK = 2;
+
 export default function ScanAttendancePage() {
   const t = useT();
   const { lang } = useLocale();
@@ -14,11 +16,15 @@ export default function ScanAttendancePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animFrameRef = useRef<number>(0);
+  const detectedQrRef = useRef('');
+  const detectedQrCountRef = useRef(0);
+  const expectedQrValueRef = useRef('');
   const [scanState, setScanState] = useState<ScanState>('idle');
   const [resultMessage, setResultMessage] = useState('');
   const [workerId, setWorkerId] = useState('');
   const [cameraError, setCameraError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [expectedQrValue, setExpectedQrValue] = useState('');
   const today = new Date().toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
@@ -30,6 +36,29 @@ export default function ScanAttendancePage() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    fetch('/api/attendance/qr')
+      .then(r => r.json())
+      .then(data => {
+        if (data?.qrValue) {
+          expectedQrValueRef.current = data.qrValue;
+          setExpectedQrValue(data.qrValue);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const loadExpectedQrValue = async () => {
+    const res = await fetch('/api/attendance/qr');
+    const data = await res.json();
+    if (!res.ok || !data?.qrValue) {
+      throw new Error('Failed to load attendance QR');
+    }
+    expectedQrValueRef.current = data.qrValue;
+    setExpectedQrValue(data.qrValue);
+    return data.qrValue as string;
+  };
+
   const stopCamera = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(t => t.stop());
@@ -38,14 +67,22 @@ export default function ScanAttendancePage() {
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
   };
 
+  const resetDetectedQr = () => {
+    detectedQrRef.current = '';
+    detectedQrCountRef.current = 0;
+  };
+
   useEffect(() => { return () => stopCamera(); }, []);
 
   const startScanning = async () => {
     setScanState('scanning');
     setCameraError('');
     setResultMessage('');
+    resetDetectedQr();
 
     try {
+      expectedQrValueRef.current = expectedQrValue || await loadExpectedQrValue();
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
       });
@@ -87,12 +124,31 @@ export default function ScanAttendancePage() {
       const code = jsQR(imageData.data, imageData.width, imageData.height, {
         inversionAttempts: 'dontInvert',
       });
-      if (code && code.data && code.data.startsWith('AREEJ-ATT-')) {
-        handleQRDetected(code.data);
+
+      if (code && code.data === expectedQrValueRef.current) {
+        if (detectedQrRef.current === code.data) {
+          detectedQrCountRef.current += 1;
+        } else {
+          detectedQrRef.current = code.data;
+          detectedQrCountRef.current = 1;
+        }
+
+        if (detectedQrCountRef.current >= REQUIRED_QR_STREAK) {
+          resetDetectedQr();
+          handleQRDetected(code.data);
+          return;
+        }
+
+        animFrameRef.current = requestAnimationFrame(scanLoop);
+      } else if (code && code.data) {
+        resetDetectedQr();
+        animFrameRef.current = requestAnimationFrame(scanLoop);
       } else {
+        resetDetectedQr();
         animFrameRef.current = requestAnimationFrame(scanLoop);
       }
     }).catch(() => {
+      resetDetectedQr();
       animFrameRef.current = requestAnimationFrame(scanLoop);
     });
   };
@@ -112,8 +168,17 @@ export default function ScanAttendancePage() {
 
       if (res.ok) {
         setScanState('success');
-        setResultMessage(t(`تم تسجيل حضورك بنجاح في ${data.checkInTime}`, `Check-in successful at ${data.checkInTime}`));
-        toast.success(t('تم تسجيل الحضور ✅', 'Attendance recorded ✅'));
+        const recordTime = data?.action === 'check_out' ? data?.record?.checkOutTime : data?.record?.checkInTime;
+        setResultMessage(
+          data?.action === 'check_out'
+            ? t(`تم تسجيل انصرافك بنجاح في ${recordTime}`, `Check-out successful at ${recordTime}`)
+            : t(`تم تسجيل حضورك بنجاح في ${recordTime}`, `Check-in successful at ${recordTime}`)
+        );
+        toast.success(
+          data?.action === 'check_out'
+            ? t('تم تسجيل الانصراف ✅', 'Departure recorded ✅')
+            : t('تم تسجيل الحضور ✅', 'Attendance recorded ✅')
+        );
       } else {
         setScanState('error');
         setResultMessage(data.error || t('فشل تسجيل الحضور', 'Attendance failed'));
@@ -130,6 +195,7 @@ export default function ScanAttendancePage() {
 
   const reset = () => {
     stopCamera();
+    resetDetectedQr();
     setScanState('idle');
     setResultMessage('');
     setCameraError('');

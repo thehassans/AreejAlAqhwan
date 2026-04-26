@@ -6,6 +6,8 @@ import QRCode from 'qrcode';
 import toast from 'react-hot-toast';
 import { useT, useLocale } from '@/lib/i18n';
 
+const REQUIRED_QR_STREAK = 2;
+
 type AttendanceOverviewStatus = 'absent' | 'checked_in' | 'checked_out';
 
 interface EmployeeOverviewItem {
@@ -46,6 +48,7 @@ export default function AttendancePage() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
   const [qrDataUrl, setQrDataUrl] = useState('');
+  const [todayQrValue, setTodayQrValue] = useState('');
   const [today, setToday] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [filterWorker, setFilterWorker] = useState('');
@@ -66,6 +69,8 @@ export default function AttendancePage() {
   const streamRef = useRef<MediaStream | null>(null);
   const animFrameRef = useRef<number>(0);
   const scannedRef = useRef(false);
+  const detectedQrRef = useRef('');
+  const detectedQrCountRef = useRef(0);
 
   const todayFormatted = new Date().toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Riyadh',
@@ -84,6 +89,7 @@ export default function AttendancePage() {
       const res = await fetch('/api/attendance/qr');
       const data = await res.json();
       setToday(data.date);
+      setTodayQrValue(data.qrValue || '');
       const url = await QRCode.toDataURL(data.qrValue, {
         width: 280,
         margin: 2,
@@ -130,6 +136,11 @@ export default function AttendancePage() {
     setScanning(false);
   }, []);
 
+  const resetDetectedQr = useCallback(() => {
+    detectedQrRef.current = '';
+    detectedQrCountRef.current = 0;
+  }, []);
+
   const closeScanner = useCallback(() => {
     stopCamera();
     setScannerOpen(false);
@@ -137,7 +148,8 @@ export default function AttendancePage() {
     setScanAction(null);
     setScanError('');
     scannedRef.current = false;
-  }, [stopCamera]);
+    resetDetectedQr();
+  }, [resetDetectedQr, stopCamera]);
 
   const submitAttendance = useCallback(async (qrValue: string) => {
     if (!authUser) {
@@ -176,6 +188,14 @@ export default function AttendancePage() {
     setScanError('');
     setScanSuccess(false);
     scannedRef.current = false;
+    resetDetectedQr();
+
+    if (!todayQrValue) {
+      setScanError(t('تعذر تحميل رمز الحضور اليومي. يرجى تحديث الصفحة والمحاولة مرة أخرى.', 'Could not load today\'s attendance QR. Please refresh and try again.'));
+      setScanning(false);
+      return;
+    }
+
     setScanning(true);
 
     try {
@@ -206,11 +226,25 @@ export default function AttendancePage() {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
-        if (code && code.data) {
+        if (code && code.data === todayQrValue) {
+          if (detectedQrRef.current === code.data) {
+            detectedQrCountRef.current += 1;
+          } else {
+            detectedQrRef.current = code.data;
+            detectedQrCountRef.current = 1;
+          }
+
+          if (detectedQrCountRef.current < REQUIRED_QR_STREAK) {
+            animFrameRef.current = requestAnimationFrame(tick);
+            return;
+          }
+
+          resetDetectedQr();
           scannedRef.current = true;
           stopCamera();
           submitAttendance(code.data);
         } else {
+          resetDetectedQr();
           animFrameRef.current = requestAnimationFrame(tick);
         }
       };
@@ -219,7 +253,7 @@ export default function AttendancePage() {
       setScanError(t('تعذر الوصول للكاميرا. يرجى السماح بالوصول وإعادة المحاولة.', 'Cannot access camera. Please allow access and try again.'));
       setScanning(false);
     }
-  }, [stopCamera, submitAttendance]);
+  }, [resetDetectedQr, stopCamera, submitAttendance, t, todayQrValue]);
 
   useEffect(() => {
     if (scannerOpen) startCamera();
