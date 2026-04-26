@@ -343,7 +343,6 @@ export default function AttendancePage() {
   const overviewTotalWorkedSeconds = employeeOverview.reduce((total: number, item: EmployeeOverviewItem) => total + (item.status === 'checked_out' ? (getDurationSeconds(item.record) || 0) : 0), 0);
   const overviewLiveWorkedSeconds = employeeOverview.reduce((total: number, item: EmployeeOverviewItem) => total + (item.status === 'checked_in' ? (getDurationSeconds(item.record) || 0) : 0), 0);
   const overviewAverageWorkedSeconds = overviewDepartureCount > 0 ? Math.floor(overviewTotalWorkedSeconds / overviewDepartureCount) : 0;
-  const filteredTotalWorkedSeconds = filtered.reduce((total: number, record: AttendanceRecord) => total + (getDurationSeconds(record) || 0), 0);
   const filteredCompletedWorkedSeconds = filtered.reduce((total: number, record: AttendanceRecord) => total + (record.checkOutTime ? (getDurationSeconds(record) || 0) : 0), 0);
   const filteredCompletedCount = filtered.filter((record: AttendanceRecord) => !!record.checkOutTime).length;
   const overviewDateLabel = overviewDate ? fmtDate(overviewDate) : '--';
@@ -735,11 +734,7 @@ export default function AttendancePage() {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             {!loading && filtered.length > 0 && (
               <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.22em] text-gray-400 mb-1">{t('إجمالي السجلات المعروضة', 'Visible total time')}</p>
-                    <p className="text-lg font-bold text-gray-800" dir="ltr">{fmtDuration(filteredTotalWorkedSeconds)}</p>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <p className="text-[11px] uppercase tracking-[0.22em] text-gray-400 mb-1">{t('السجلات المكتملة', 'Completed entries')}</p>
                     <p className="text-lg font-bold text-gray-800">{filteredCompletedCount}</p>
