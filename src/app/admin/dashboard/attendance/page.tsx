@@ -263,15 +263,19 @@ export default function AttendancePage() {
 
   // ───────────────────────────────────────────────────────────────────────────
 
+  const isWorker = authUser?.role === 'worker';
   const myRecords = authUser?.role === 'worker'
     ? records.filter(r => r.workerId === authUser.id)
     : records;
 
-  const filtered = myRecords.filter(r =>
+  const activeDate = !isWorker ? (filterDate || today) : filterDate;
+  const datewiseRecords = activeDate ? myRecords.filter((r: AttendanceRecord) => r.date === activeDate) : myRecords;
+
+  const filtered = datewiseRecords.filter(r =>
     r.workerName.toLowerCase().includes(search.toLowerCase())
   );
 
-  const overviewDate = filterDate || today;
+  const overviewDate = activeDate;
   const overviewRecords = overviewDate ? records.filter((r: AttendanceRecord) => r.date === overviewDate) : [];
 
   const parseSaudiDateTime = (attendanceDate: string, timeValue: string) => new Date(`${attendanceDate}T${timeValue}+03:00`);
@@ -317,7 +321,6 @@ export default function AttendancePage() {
     return `${minutes}m`;
   };
 
-  const isWorker = authUser?.role === 'worker';
   const todayRecord = isWorker ? records.find((r: AttendanceRecord) => r.workerId === authUser?.id && r.date === today) || null : null;
   const todayAlreadyMarked = !!todayRecord;
   const todayHasDeparted = !!todayRecord?.checkOutTime;
@@ -709,7 +712,7 @@ export default function AttendancePage() {
                     <FiCalendar size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="date"
-                      value={filterDate}
+                      value={filterDate || today}
                       onChange={e => setFilterDate(e.target.value)}
                       className="pr-9 pl-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#5B7B6D]/30 focus:border-[#5B7B6D] outline-none bg-gray-50 focus:bg-white transition-all"
                     />
