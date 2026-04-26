@@ -6,6 +6,7 @@ const AttendanceSchema = new mongoose.Schema({
   date: { type: String, required: true },
   checkInTime: { type: String, required: true },
   checkOutTime: { type: String, default: null },
+  workedSeconds: { type: Number, default: 0 },
   workedMinutes: { type: Number, default: 0 },
   status: { type: String, enum: ['checked_in', 'checked_out'], default: 'checked_in' },
   method: { type: String, enum: ['qr'], default: 'qr' },

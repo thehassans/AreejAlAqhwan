@@ -29,14 +29,14 @@ import { validateQRCode } from '@/lib/qrAttendance';
    };
  }
 
- function getWorkedMinutes(attendanceDate: string, checkInTime: string, checkOutTime: string) {
+ function getWorkedSeconds(attendanceDate: string, checkInTime: string, checkOutTime: string) {
    const checkIn = new Date(`${attendanceDate}T${checkInTime}+03:00`);
    const checkOut = new Date(`${attendanceDate}T${checkOutTime}+03:00`);
    const diffMs = checkOut.getTime() - checkIn.getTime();
 
    if (!Number.isFinite(diffMs) || diffMs < 0) return 0;
 
-   return Math.floor(diffMs / 60000);
+   return Math.floor(diffMs / 1000);
  }
 
 export async function GET(req: NextRequest) {
@@ -96,6 +96,7 @@ export async function POST(req: NextRequest) {
         date: attendanceDate,
         checkInTime: saudiNow.time,
         checkOutTime: null,
+        workedSeconds: 0,
         workedMinutes: 0,
         status: 'checked_in',
         method: 'qr',
@@ -106,9 +107,11 @@ export async function POST(req: NextRequest) {
 
     if (!existing.checkOutTime) {
       const checkOutTime = saudiNow.time;
-      const workedMinutes = getWorkedMinutes(attendanceDate, existing.checkInTime, checkOutTime);
+      const workedSeconds = getWorkedSeconds(attendanceDate, existing.checkInTime, checkOutTime);
+      const workedMinutes = Math.floor(workedSeconds / 60);
 
       existing.checkOutTime = checkOutTime;
+      existing.workedSeconds = workedSeconds;
       existing.workedMinutes = workedMinutes;
       existing.status = 'checked_out';
       existing.method = 'qr';

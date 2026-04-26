@@ -21,6 +21,7 @@ interface AttendanceRecord {
   date: string;
   checkInTime: string;
   checkOutTime?: string | null;
+  workedSeconds?: number;
   workedMinutes?: number;
   status?: 'checked_in' | 'checked_out';
   method: 'qr';
@@ -51,6 +52,7 @@ export default function AttendancePage() {
   const [search, setSearch] = useState('');
   const [qrLoading, setQrLoading] = useState(true);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   // Camera scanner state
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -112,6 +114,10 @@ export default function AttendancePage() {
 
   useEffect(() => { generateQR(); }, [generateQR]);
   useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    const interval = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   // ── Camera scanner ──────────────────────────────────────────────────────────
 
@@ -234,16 +240,47 @@ export default function AttendancePage() {
   const overviewDate = filterDate || today;
   const overviewRecords = overviewDate ? records.filter((r: AttendanceRecord) => r.date === overviewDate) : [];
 
+  const parseSaudiDateTime = (attendanceDate: string, timeValue: string) => new Date(`${attendanceDate}T${timeValue}+03:00`);
+
+  const getDurationSeconds = (record?: AttendanceRecord | null) => {
+    if (!record) return null;
+
+    if (typeof record.workedSeconds === 'number' && record.workedSeconds > 0) {
+      return record.workedSeconds;
+    }
+
+    if (record.checkOutTime) {
+      const diffMs = parseSaudiDateTime(record.date, record.checkOutTime).getTime() - parseSaudiDateTime(record.date, record.checkInTime).getTime();
+      return Number.isFinite(diffMs) && diffMs >= 0 ? Math.floor(diffMs / 1000) : 0;
+    }
+
+    const diffMs = nowMs - parseSaudiDateTime(record.date, record.checkInTime).getTime();
+    return Number.isFinite(diffMs) && diffMs >= 0 ? Math.floor(diffMs / 1000) : 0;
+  };
+
   const fmtDate = (d: string) => {
     const parts = d.split('-');
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
   };
 
-  const fmtDuration = (minutes?: number) => {
-    if (!minutes || minutes <= 0) return '--';
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  const fmtDuration = (totalSeconds?: number | null) => {
+    if (totalSeconds === null || totalSeconds === undefined || totalSeconds < 0) return '--';
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return [hours, minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':');
+  };
+
+  const fmtDurationMeta = (totalSeconds?: number | null) => {
+    if (totalSeconds === null || totalSeconds === undefined || totalSeconds < 0) return '--';
+    if (totalSeconds < 60) return `${totalSeconds}s`;
+
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    if (minutes > 0 && seconds > 0) return `${minutes}m ${seconds}s`;
+    return `${minutes}m`;
   };
 
   const isWorker = authUser?.role === 'worker';
@@ -269,6 +306,12 @@ export default function AttendancePage() {
   const overviewDepartureCount = employeeOverview.filter((item: EmployeeOverviewItem) => item.status === 'checked_out').length;
   const overviewInsideCount = employeeOverview.filter((item: EmployeeOverviewItem) => item.status === 'checked_in').length;
   const overviewAbsentCount = employeeOverview.filter((item: EmployeeOverviewItem) => item.status === 'absent').length;
+  const overviewTotalWorkedSeconds = employeeOverview.reduce((total: number, item: EmployeeOverviewItem) => total + (item.status === 'checked_out' ? (getDurationSeconds(item.record) || 0) : 0), 0);
+  const overviewLiveWorkedSeconds = employeeOverview.reduce((total: number, item: EmployeeOverviewItem) => total + (item.status === 'checked_in' ? (getDurationSeconds(item.record) || 0) : 0), 0);
+  const overviewAverageWorkedSeconds = overviewDepartureCount > 0 ? Math.floor(overviewTotalWorkedSeconds / overviewDepartureCount) : 0;
+  const filteredTotalWorkedSeconds = filtered.reduce((total: number, record: AttendanceRecord) => total + (getDurationSeconds(record) || 0), 0);
+  const filteredCompletedWorkedSeconds = filtered.reduce((total: number, record: AttendanceRecord) => total + (record.checkOutTime ? (getDurationSeconds(record) || 0) : 0), 0);
+  const filteredCompletedCount = filtered.filter((record: AttendanceRecord) => !!record.checkOutTime).length;
   const overviewDateLabel = overviewDate ? fmtDate(overviewDate) : '--';
 
   return (
@@ -314,7 +357,7 @@ export default function AttendancePage() {
                     {t('وقت الانصراف بتوقيت السعودية', 'Departure time (Saudi)')}: <span dir="ltr" className="font-semibold">{todayRecord?.checkOutTime}</span>
                   </p>
                   <p className="text-sm text-gray-500">
-                    {t('مدة الدوام', 'Worked duration')}: <span dir="ltr" className="font-semibold">{fmtDuration(todayRecord?.workedMinutes)}</span>
+                    {t('مدة الدوام', 'Worked duration')}: <span dir="ltr" className="font-semibold">{fmtDuration(getDurationSeconds(todayRecord))}</span>
                   </p>
                 </div>
               </div>
@@ -329,6 +372,9 @@ export default function AttendancePage() {
                     <p className="text-sm text-amber-600 font-semibold">{t('باقي تسجيل الانصراف قبل نهاية اليوم', 'Departure still needs to be recorded before the end of the day')}</p>
                     <p className="text-sm text-gray-500 mt-1">
                       {t('وقت الحضور بتوقيت السعودية', 'Arrival time (Saudi)')}: <span dir="ltr" className="font-semibold">{todayRecord?.checkInTime}</span>
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {t('المدة الحالية', 'Live duration')}: <span dir="ltr" className="font-semibold">{fmtDuration(getDurationSeconds(todayRecord))}</span>
                     </p>
                   </div>
                 </div>
@@ -359,7 +405,7 @@ export default function AttendancePage() {
 
       {/* ── ADMIN STATS ─────────────────────────────────────── */}
       {!isWorker && (
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-6 gap-4">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
@@ -393,6 +439,28 @@ export default function AttendancePage() {
               </div>
             </div>
           </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">
+                <FiClock size={20} className="text-violet-500" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-800" dir="ltr">{fmtDuration(overviewTotalWorkedSeconds)}</p>
+                <p className="text-xs text-gray-500">{t('إجمالي الوقت', 'Total worked')}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center">
+                <FiClock size={20} className="text-slate-500" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-800" dir="ltr">{fmtDuration(overviewAverageWorkedSeconds)}</p>
+                <p className="text-xs text-gray-500">{t('متوسط الدوام', 'Average shift')}</p>
+              </div>
+            </div>
+          </div>
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 col-span-2 xl:col-span-1">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center">
@@ -423,6 +491,29 @@ export default function AttendancePage() {
             </div>
           </div>
           <div className="p-6">
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
+              <div className="rounded-2xl border border-gray-100 bg-gray-50/80 px-4 py-4">
+                <p className="text-[11px] uppercase tracking-[0.22em] text-gray-400 mb-1">{t('إجمالي الوقت', 'Total worked')}</p>
+                <p className="text-xl font-bold text-gray-800" dir="ltr">{fmtDuration(overviewTotalWorkedSeconds)}</p>
+                <p className="text-xs text-gray-500 mt-1">{t('مجموع الدوامات المكتملة في التاريخ المحدد', 'Sum of all completed shifts for the selected date')}</p>
+              </div>
+              <div className="rounded-2xl border border-gray-100 bg-gray-50/80 px-4 py-4">
+                <p className="text-[11px] uppercase tracking-[0.22em] text-gray-400 mb-1">{t('الوقت المباشر', 'Live now')}</p>
+                <p className="text-xl font-bold text-gray-800" dir="ltr">{fmtDuration(overviewLiveWorkedSeconds)}</p>
+                <p className="text-xs text-gray-500 mt-1">{t('الوقت الجاري للموظفين الموجودين في الدوام الآن', 'Running time for employees currently on shift')}</p>
+              </div>
+              <div className="rounded-2xl border border-gray-100 bg-gray-50/80 px-4 py-4">
+                <p className="text-[11px] uppercase tracking-[0.22em] text-gray-400 mb-1">{t('متوسط الدوام', 'Average shift')}</p>
+                <p className="text-xl font-bold text-gray-800" dir="ltr">{fmtDuration(overviewAverageWorkedSeconds)}</p>
+                <p className="text-xs text-gray-500 mt-1">{t('متوسط الوقت للدوامات المكتملة', 'Average time across completed shifts')}</p>
+              </div>
+              <div className="rounded-2xl border border-gray-100 bg-gray-50/80 px-4 py-4">
+                <p className="text-[11px] uppercase tracking-[0.22em] text-gray-400 mb-1">{t('الموظفون المعروضون', 'Employees shown')}</p>
+                <p className="text-xl font-bold text-gray-800">{employeeOverview.length}</p>
+                <p className="text-xs text-gray-500 mt-1">{t('بعد تطبيق البحث والفلاتر الحالية', 'After applying current search and filters')}</p>
+              </div>
+            </div>
+
             {employeeOverview.length === 0 ? (
               <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50/70 px-6 py-14 text-center">
                 <div className="w-16 h-16 mx-auto rounded-2xl bg-white shadow-sm border border-gray-100 flex items-center justify-center mb-4">
@@ -493,18 +584,25 @@ export default function AttendancePage() {
                         <p className="text-[11px] font-medium text-gray-400 mb-1">{t('الانصراف', 'Departure')}</p>
                         <p className="text-sm font-bold text-gray-800" dir="ltr">{record?.checkOutTime || '--'}</p>
                       </div>
-                      <div className="rounded-2xl bg-white/80 border border-white px-3 py-3">
+                      <div className={`rounded-2xl border px-3 py-3 ${status === 'checked_in' ? 'bg-amber-50 border-amber-100' : status === 'checked_out' ? 'bg-emerald-50 border-emerald-100' : 'bg-white/80 border-white'}`}>
                         <p className="text-[11px] font-medium text-gray-400 mb-1">{t('المدة', 'Duration')}</p>
-                        <p className="text-sm font-bold text-gray-800" dir="ltr">{fmtDuration(record?.workedMinutes)}</p>
+                        <p className="text-sm font-bold text-gray-800" dir="ltr">{record ? fmtDuration(getDurationSeconds(record)) : '--'}</p>
+                        <p className="text-[11px] text-gray-500 mt-1" dir="ltr">{record ? fmtDurationMeta(getDurationSeconds(record)) : '--'}</p>
                       </div>
                     </div>
 
-                    <div className="mt-4 rounded-2xl border border-white bg-white/70 px-4 py-3 text-sm font-medium text-gray-600">
-                      {status === 'checked_in'
-                        ? t('الموظف داخل الدوام حالياً ولم يسجل الانصراف بعد', 'This employee is currently on shift and has not checked out yet')
-                        : status === 'checked_out'
-                          ? t('تم تسجيل الحضور والانصراف لهذا الموظف بنجاح', 'Arrival and departure have been fully recorded for this employee')
-                          : t('لا يوجد تسجيل حضور لهذا الموظف في التاريخ المعروض', 'No attendance has been recorded for this employee on the selected date')}
+                    <div className="mt-4 flex items-end justify-between gap-4">
+                      <div className="rounded-2xl border border-white bg-white/70 px-4 py-3 text-sm font-medium text-gray-600 flex-1">
+                        {status === 'checked_in'
+                          ? t('الموظف داخل الدوام حالياً ولم يسجل الانصراف بعد', 'This employee is currently on shift and has not checked out yet')
+                          : status === 'checked_out'
+                            ? t('تم تسجيل الحضور والانصراف لهذا الموظف بنجاح', 'Arrival and departure have been fully recorded for this employee')
+                            : t('لا يوجد تسجيل حضور لهذا الموظف في التاريخ المعروض', 'No attendance has been recorded for this employee on the selected date')}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[11px] uppercase tracking-[0.22em] text-gray-400 mb-1">{t('الوقت المقضي', 'Time spent')}</p>
+                        <p className="text-lg font-bold text-gray-800" dir="ltr">{record ? fmtDuration(getDurationSeconds(record)) : '--'}</p>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -601,6 +699,24 @@ export default function AttendancePage() {
 
           {/* Records Table */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            {!loading && filtered.length > 0 && (
+              <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.22em] text-gray-400 mb-1">{t('إجمالي السجلات المعروضة', 'Visible total time')}</p>
+                    <p className="text-lg font-bold text-gray-800" dir="ltr">{fmtDuration(filteredTotalWorkedSeconds)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.22em] text-gray-400 mb-1">{t('السجلات المكتملة', 'Completed entries')}</p>
+                    <p className="text-lg font-bold text-gray-800">{filteredCompletedCount}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.22em] text-gray-400 mb-1">{t('متوسط السجل', 'Average entry')}</p>
+                    <p className="text-lg font-bold text-gray-800" dir="ltr">{fmtDuration(filteredCompletedCount > 0 ? Math.floor(filteredCompletedWorkedSeconds / filteredCompletedCount) : 0)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             {loading ? (
               <div className="flex items-center justify-center h-48">
                 <div className="animate-spin w-8 h-8 border-4 border-[#5B7B6D] border-t-transparent rounded-full" />
@@ -646,7 +762,7 @@ export default function AttendancePage() {
                           </div>
                         </td>
                         <td className="px-5 py-4 text-sm text-gray-600" dir="ltr">{record.checkOutTime || '--'}</td>
-                        <td className="px-5 py-4 text-sm text-gray-600" dir="ltr">{fmtDuration(record.workedMinutes)}</td>
+                        <td className="px-5 py-4 text-sm text-gray-600" dir="ltr">{fmtDuration(getDurationSeconds(record))}</td>
                         <td className="px-5 py-4">
                           <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-semibold ${record.checkOutTime ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
                             {record.checkOutTime ? t('مكتمل', 'Completed') : t('داخل الدوام', 'Checked in')}
